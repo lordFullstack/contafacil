@@ -171,6 +171,24 @@ export function getSummary() {
   }
 }
 
+// Mismo resumen que getSummary(), pero acotado a los movimientos de hoy
+export function getTodaySummary() {
+  const txs = read(KEYS.transactions)
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const todayTxs = txs.filter((t) => t.date.slice(0, 10) === todayKey)
+
+  const ingresosHoy = todayTxs.filter((t) => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0)
+  const gastosHoy = todayTxs.filter((t) => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0)
+
+  return {
+    ingresosHoy,
+    gastosHoy,
+    // Igual que en getSummary: el total del día es solo el efectivo que entró,
+    // los gastos no se restan.
+    totalHoy: ingresosHoy,
+  }
+}
+
 // Agrupa movimientos de los últimos N días para la gráfica
 export function getDailySeries(days = 7) {
   const txs = read(KEYS.transactions)
@@ -232,4 +250,5 @@ export function getFullBackup() {
     settings: getSettings(),
   }
     }
-               
+
+      
