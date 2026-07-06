@@ -39,7 +39,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
           <StatCard label="Efectivo en caja" value={summary.saldo} icon={Wallet} tone="neutral" />
         </div>
         <div className="col-span-2 md:col-span-1">
-          <StatCard label="Efectivo recibido hoy" value={today.totalHoy} icon={Calculator} tone="neutral" />
+          <StatCard label="Total venta" value={today.totalHoy} icon={Calculator} tone="neutral" />
         </div>
         <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" />
         <StatCard label="Gastos" value={summary.gastos} icon={TrendingDown} tone="egreso" />
@@ -143,4 +143,5 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       )}
     </div>
   )
-}
+                  }
+            
