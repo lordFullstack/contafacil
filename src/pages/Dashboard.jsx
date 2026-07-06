@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react'
-import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Plus } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Plus, Calculator } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import StatCard, { formatCOP } from '../components/StatCard'
 import TransactionForm from '../components/TransactionForm'
-import { getSummary, getDailySeries, getTransactions, getProviders, getFullBackup } from '../lib/storage'
+import { getSummary, getTodaySummary, getDailySeries, getTransactions, getProviders, getFullBackup } from '../lib/storage'
 import { exportTransactionsToCSV, exportJSONBackup } from '../lib/export'
 
 export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   const [showForm, setShowForm] = useState(false)
 
   const summary = useMemo(() => getSummary(), [refreshKey])
+  const today = useMemo(() => getTodaySummary(), [refreshKey])
   const series = useMemo(() => getDailySeries(7), [refreshKey])
   const recent = useMemo(() => getTransactions().slice(0, 5), [refreshKey])
   const providers = useMemo(() => getProviders(), [refreshKey])
@@ -36,6 +37,9 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       <div className="grid grid-cols-2 gap-3 px-5">
         <div className="col-span-2">
           <StatCard label="Saldo en efectivo" value={summary.saldo} icon={Wallet} tone="neutral" />
+        </div>
+        <div className="col-span-2">
+          <StatCard label="Total del día (ingresos + gastos)" value={today.totalHoy} icon={Calculator} tone="neutral" />
         </div>
         <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" />
         <StatCard label="Gastos" value={summary.gastos} icon={TrendingDown} tone="egreso" />
@@ -137,4 +141,4 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       )}
     </div>
   )
-}
+          }
