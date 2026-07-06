@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react'
-import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Plus, Calculator } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Upload, Plus, Calculator } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import StatCard, { formatCOP } from '../components/StatCard'
 import TransactionForm from '../components/TransactionForm'
-import { getSummary, getTodaySummary, getDailySeries, getTransactions, getProviders, getFullBackup } from '../lib/storage'
+import { getSummary, getTodaySummary, getDailySeries, getTransactions, getProviders, getFullBackup, importFullBackup } from '../lib/storage'
 import { exportTransactionsToCSV, exportJSONBackup } from '../lib/export'
 
 export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   const [showForm, setShowForm] = useState(false)
+  const fileInputRef = useRef(null)
 
   const summary = useMemo(() => getSummary(), [refreshKey])
   const today = useMemo(() => getTodaySummary(), [refreshKey])
@@ -21,6 +22,39 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
 
   function handleExportJSON() {
     exportJSONBackup(getFullBackup())
+  }
+
+  function handleImportClick() {
+    fileInputRef.current?.click()
+  }
+
+  function handleImportFile(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const confirmado = window.confirm(
+      'Esto reemplazará los datos actuales (ventas, proveedores y créditos) con los del archivo de backup. ¿Deseas continuar?'
+    )
+    if (!confirmado) {
+      e.target.value = ''
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result)
+        importFullBackup(data)
+        onDataChanged()
+        alert('Backup importado correctamente.')
+      } catch (err) {
+        alert(err.message || 'No se pudo importar el archivo.')
+      } finally {
+        e.target.value = '' // permite volver a subir el mismo archivo si es necesario
+      }
+    }
+    reader.onerror = () => alert('No se pudo leer el archivo.')
+    reader.readAsText(file)
   }
 
   return (
@@ -107,7 +141,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       </div>
       </div>
 
-      {/* Exportar */}
+      {/* Exportar / Importar */}
       <div className="mx-5 mt-4 grid grid-cols-2 gap-3 md:mx-0 md:max-w-sm">
         <button
           onClick={handleExportCSV}
@@ -121,6 +155,19 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
         >
           <FileJson size={16} /> Backup JSON
         </button>
+        <button
+          onClick={handleImportClick}
+          className="col-span-2 flex items-center justify-center gap-2 rounded-xl border border-base-600 bg-base-800 py-3 text-sm font-medium text-slate-200 active:scale-[0.98]"
+        >
+          <Upload size={16} /> Importar backup
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json"
+          onChange={handleImportFile}
+          className="hidden"
+        />
       </div>
 
       {/* Botón flotante */}
