@@ -159,7 +159,7 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
       {pendingCredit && (
         <ConfirmDialog
           title="Confirmar pago de crédito"
-          message={`Vas a pagar ${formatCOP(pendingCredit.amount)} a ${pendingCredit.providerName}.\n\nEsto descontará el monto de tu saldo en efectivo. ¿Confirmas?`}
+          message={`Vas a pagar ${formatCOP(pendingCredit.amount)} a ${pendingCredit.providerName}.\n\nEste pago se registrará como gasto, pero no descuenta tu saldo en efectivo. ¿Confirmas?`}
           confirmLabel="Sí, pagar"
           cancelLabel="Cancelar"
           tone="egreso"
@@ -169,4 +169,4 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
       )}
     </div>
   )
-}
+          }
