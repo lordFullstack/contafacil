@@ -36,10 +36,10 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       {/* Tarjetas resumen */}
       <div className="grid grid-cols-2 gap-3 px-5 md:grid-cols-4 md:px-0">
         <div className="col-span-2 md:col-span-1">
-          <StatCard label="Saldo en efectivo" value={summary.saldo} icon={Wallet} tone="neutral" />
+          <StatCard label="Efectivo en caja" value={summary.saldo} icon={Wallet} tone="neutral" />
         </div>
         <div className="col-span-2 md:col-span-1">
-          <StatCard label="Total del día (ingresos + gastos)" value={today.totalHoy} icon={Calculator} tone="neutral" />
+          <StatCard label="Efectivo recibido hoy" value={today.totalHoy} icon={Calculator} tone="neutral" />
         </div>
         <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" />
         <StatCard label="Gastos" value={summary.gastos} icon={TrendingDown} tone="egreso" />
