@@ -23,7 +23,16 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
     return map
   }, [credits])
 
-  function handlePayCredit(id) {
+  function handlePayCredit(id, amount, providerName) {
+    const formattedAmount = new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(amount)
+    const confirmed = window.confirm(
+      `¿Confirmas el pago de ${formattedAmount} a ${providerName}?\n\nEsto descontará el monto de tu saldo en efectivo.`
+    )
+    if (!confirmed) return
     markCreditPaid(id)
     onDataChanged()
   }
@@ -99,7 +108,7 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-slate-300">{formatCOP(c.amount)}</span>
                           <button
-                            onClick={() => handlePayCredit(c.id)}
+                            onClick={() => handlePayCredit(c.id, c.amount, p.name)}
                             className="text-ingreso hover:text-ingreso/80"
                             title="Marcar como pagado"
                           >
@@ -153,4 +162,4 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
       )}
     </div>
   )
-}
+                  }
