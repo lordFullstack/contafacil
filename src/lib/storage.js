@@ -249,6 +249,28 @@ export function getFullBackup() {
     credits: read(KEYS.credits),
     settings: getSettings(),
   }
-    }
+}
 
-      
+// Restaura un backup completo generado por getFullBackup().
+// Sobrescribe los datos actuales en localStorage con los del archivo.
+export function importFullBackup(data) {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Archivo de backup inválido.')
+  }
+
+  const camposValidos = ['transactions', 'providers', 'credits', 'settings']
+  const tieneAlgunCampo = camposValidos.some((campo) => campo in data)
+  if (!tieneAlgunCampo) {
+    throw new Error('El archivo no tiene el formato de un backup de ContaFácil.')
+  }
+
+  if (Array.isArray(data.transactions)) write(KEYS.transactions, data.transactions)
+  if (Array.isArray(data.providers)) write(KEYS.providers, data.providers)
+  if (Array.isArray(data.credits)) write(KEYS.credits, data.credits)
+  if (data.settings && typeof data.settings === 'object') write(KEYS.settings, data.settings)
+
+  return true
+}
+
+
+  
