@@ -121,7 +121,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
           message={
             pendingDelete.type === 'ingreso'
               ? `Vas a eliminar un ingreso de ${formatCOP(pendingDelete.amount)}.\n\nEsto RESTARÁ ese monto de tu saldo en efectivo. ¿Confirmas?`
-              : `Vas a eliminar un egreso de ${formatCOP(pendingDelete.amount)}.\n\nEsto SUMARÁ ese monto de vuelta a tu saldo en efectivo. ¿Confirmas?`
+              : `Vas a eliminar un egreso de ${formatCOP(pendingDelete.amount)}.\n\nEsto no afecta tu saldo en efectivo, solo se quitará del total de gastos. ¿Confirmas?`
           }
           confirmLabel="Sí, eliminar"
           cancelLabel="Cancelar"
@@ -132,4 +132,4 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
       )}
     </div>
   )
-}
+              }
