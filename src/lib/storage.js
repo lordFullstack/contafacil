@@ -165,24 +165,9 @@ export function getSummary() {
   return {
     ingresos,
     gastos,
-    saldo: ingresos - gastos,
-  }
-}
-
-// Resumen del día actual: ingresos, gastos y el TOTAL (suma de ambos),
-// útil para cuadre de caja diario — no confundir con "saldo" (que es la resta acumulada).
-export function getTodaySummary() {
-  const txs = read(KEYS.transactions)
-  const todayKey = new Date().toISOString().slice(0, 10)
-  const todayTxs = txs.filter((t) => t.date.slice(0, 10) === todayKey)
-
-  const ingresosHoy = todayTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
-  const gastosHoy = todayTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
-
-  return {
-    ingresosHoy,
-    gastosHoy,
-    totalHoy: ingresosHoy + gastosHoy,
+    // Saldo en efectivo = solo lo que ha entrado a caja (ingresos).
+    // Los gastos se muestran aparte y NO descuentan del saldo.
+    saldo: ingresos,
   }
 }
 
@@ -246,4 +231,5 @@ export function getFullBackup() {
     credits: read(KEYS.credits),
     settings: getSettings(),
   }
-}
+    }
+               
