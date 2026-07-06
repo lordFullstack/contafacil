@@ -24,6 +24,19 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
     e.preventDefault()
     if (!amount || Number(amount) <= 0) return
 
+    // Confirmación explícita antes de descontar saldo en efectivo real
+    if (type === 'egreso') {
+      const formattedAmount = new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0,
+      }).format(Number(amount))
+      const confirmed = window.confirm(
+        `¿Confirmas este egreso de ${formattedAmount}?\n\nEsto descontará el monto de tu saldo en efectivo.`
+      )
+      if (!confirmed) return
+    }
+
     if (category === 'Pago a proveedor' && providerId) {
       payProvider({ providerId, amount, description })
     } else {
@@ -134,4 +147,4 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
       </div>
     </div>
   )
-}
+              }
