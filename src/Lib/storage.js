@@ -1,0 +1,232 @@
+// ─────────────────────────────────────────────────────────
+// Capa de persistencia local. Toda la app lee/escribe SOLO aquí.
+// El día de mañana, migrar a Supabase/Firebase implica reemplazar
+// el contenido de estas funciones (mismo "contrato" de entrada/salida),
+// sin tocar los componentes que las consumen.
+// ─────────────────────────────────────────────────────────
+
+const KEYS = {
+  transactions: 'cf_transactions',
+  providers: 'cf_providers',
+  credits: 'cf_credits',
+  settings: 'cf_settings',
+}
+
+// ---------- utilidades base ----------
+
+function read(key) {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? JSON.parse(raw) : []
+  } catch (e) {
+    console.error(`Error leyendo ${key} de localStorage`, e)
+    return []
+  }
+}
+
+function write(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+    return true
+  } catch (e) {
+    console.error(`Error escribiendo ${key} en localStorage`, e)
+    return false
+  }
+}
+
+function uid(prefix = 'id') {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+// ---------- Modelo de datos ----------
+// Transacción:
+// { id, type: 'ingreso' | 'egreso', amount, category, description, date (ISO), providerId? }
+//
+// Proveedor:
+// { id, name, nit, phone, category, createdAt }
+//
+// Crédito (cuenta por pagar a un proveedor):
+// { id, providerId, amount, description, date (ISO), dueDate (ISO)?, status: 'pendiente' | 'pagado' }
+
+// ---------- Transacciones ----------
+
+export function getTransactions() {
+  return read(KEYS.transactions).sort((a, b) => new Date(b.date) - new Date(a.date))
+}
+
+export function addTransaction({ type, amount, category, description, date, providerId = null }) {
+  const list = read(KEYS.transactions)
+  const item = {
+    id: uid('tx'),
+    type, // 'ingreso' | 'egreso'
+    amount: Number(amount),
+    category: category || (type === 'ingreso' ? 'Ventas' : 'Otro'),
+    description: description || '',
+    date: date || new Date().toISOString(),
+    providerId,
+  }
+  list.push(item)
+  write(KEYS.transactions, list)
+  return item
+}
+
+export function deleteTransaction(id) {
+  const list = read(KEYS.transactions).filter((t) => t.id !== id)
+  write(KEYS.transactions, list)
+}
+
+// ---------- Proveedores ----------
+
+export function getProviders() {
+  return read(KEYS.providers).sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export function addProvider({ name, nit, phone, category }) {
+  const list = read(KEYS.providers)
+  const item = {
+    id: uid('prov'),
+    name,
+    nit: nit || '',
+    phone: phone || '',
+    category: category || 'General',
+    createdAt: new Date().toISOString(),
+  }
+  list.push(item)
+  write(KEYS.providers, list)
+  return item
+}
+
+export function deleteProvider(id) {
+  const list = read(KEYS.providers).filter((p) => p.id !== id)
+  write(KEYS.providers, list)
+}
+
+// Pago a proveedor = crea una transacción tipo 'egreso' asociada a providerId
+export function payProvider({ providerId, amount, description, date }) {
+  return addTransaction({
+    type: 'egreso',
+    amount,
+    category: 'Pago a proveedor',
+    description,
+    date,
+    providerId,
+  })
+}
+
+// ---------- Créditos (cuentas por pagar) ----------
+
+export function getCredits() {
+  return read(KEYS.credits).sort((a, b) => new Date(a.dueDate || a.date) - new Date(b.dueDate || b.date))
+}
+
+export function addCredit({ providerId, amount, description, date, dueDate }) {
+  const list = read(KEYS.credits)
+  const item = {
+    id: uid('cred'),
+    providerId,
+    amount: Number(amount),
+    description: description || '',
+    date: date || new Date().toISOString(),
+    dueDate: dueDate || null,
+    status: 'pendiente',
+  }
+  list.push(item)
+  write(KEYS.credits, list)
+  return item
+}
+
+export function markCreditPaid(id) {
+  const list = read(KEYS.credits)
+  const credit = list.find((c) => c.id === id)
+  if (!credit) return null
+  credit.status = 'pagado'
+  write(KEYS.credits, list)
+  // Registrar el pago como egreso real
+  payProvider({
+    providerId: credit.providerId,
+    amount: credit.amount,
+    description: `Pago de crédito: ${credit.description}`,
+    date: new Date().toISOString(),
+  })
+  return credit
+}
+
+export function deleteCredit(id) {
+  const list = read(KEYS.credits).filter((c) => c.id !== id)
+  write(KEYS.credits, list)
+}
+
+// ---------- Cálculos para el Dashboard ----------
+
+export function getSummary() {
+  const txs = read(KEYS.transactions)
+  const ingresos = txs.filter((t) => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0)
+  const gastos = txs.filter((t) => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0)
+  return {
+    ingresos,
+    gastos,
+    saldo: ingresos - gastos,
+  }
+}
+
+// Agrupa movimientos de los últimos N días para la gráfica
+export function getDailySeries(days = 7) {
+  const txs = read(KEYS.transactions)
+  const today = new Date()
+  const series = []
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    const label = d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })
+
+    const dayTxs = txs.filter((t) => t.date.slice(0, 10) === key)
+    const ingresos = dayTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
+    const gastos = dayTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
+
+    series.push({ label, ingresos, gastos })
+  }
+  return series
+}
+
+// ---------- Configuración de empresa (branding) ----------
+
+export function getSettings() {
+  const raw = localStorage.getItem(KEYS.settings)
+  return raw
+    ? JSON.parse(raw)
+    : { companyName: 'Mi Empresa', primaryColor: '#E8B34A', secondaryColor: '#1FB6A8' }
+}
+
+export function saveSettings(settings) {
+  write(KEYS.settings, settings)
+}
+
+// ---------- Datos de ejemplo (solo si la app está vacía) ----------
+
+export function seedIfEmpty() {
+  if (read(KEYS.transactions).length === 0 && read(KEYS.providers).length === 0) {
+    const prov1 = addProvider({ name: 'Distribuidora La 70', nit: '900123456-1', phone: '3001234567', category: 'Insumos' })
+    const prov2 = addProvider({ name: 'Papelería Central', nit: '900654321-2', phone: '3109876543', category: 'Oficina' })
+
+    addTransaction({ type: 'ingreso', amount: 1250000, category: 'Ventas', description: 'Venta mostrador', date: new Date().toISOString() })
+    addTransaction({ type: 'ingreso', amount: 480000, category: 'Ventas', description: 'Venta a domicilio', date: new Date(Date.now() - 86400000).toISOString() })
+    addTransaction({ type: 'egreso', amount: 320000, category: 'Pago a proveedor', description: 'Compra insumos', date: new Date(Date.now() - 86400000).toISOString(), providerId: prov1.id })
+    addTransaction({ type: 'egreso', amount: 95000, category: 'Servicios', description: 'Internet y luz', date: new Date(Date.now() - 2 * 86400000).toISOString() })
+
+    addCredit({ providerId: prov2.id, amount: 210000, description: 'Resmas de papel y tóner', date: new Date().toISOString(), dueDate: new Date(Date.now() + 5 * 86400000).toISOString() })
+  }
+}
+
+// ---------- Backup / Exportación ----------
+
+export function getFullBackup() {
+  return {
+    exportedAt: new Date().toISOString(),
+    transactions: read(KEYS.transactions),
+    providers: read(KEYS.providers),
+    credits: read(KEYS.credits),
+    settings: getSettings(),
+  }
+}
