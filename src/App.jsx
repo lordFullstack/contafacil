@@ -3,18 +3,15 @@ import BottomNav from './components/BottomNav'
 import Dashboard from './pages/Dashboard'
 import Movimientos from './pages/Movimientos'
 import Proveedores from './pages/Proveedores'
-import { seedIfEmpty, getSettings } from './lib/storage'
+import { getSettings } from './lib/storage'
 
 export default function App() {
   const [tab, setTab] = useState('dashboard')
   const [refreshKey, setRefreshKey] = useState(0)
   const [settings, setSettings] = useState(getSettings())
 
-  // Datos de ejemplo la primera vez que se abre la app (localStorage vacío)
   useEffect(() => {
-    seedIfEmpty()
     setSettings(getSettings())
-    setRefreshKey((k) => k + 1)
   }, [])
 
   const handleDataChanged = useCallback(() => {
