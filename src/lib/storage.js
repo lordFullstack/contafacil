@@ -246,4 +246,4 @@ export function getFullBackup() {
     credits: read(KEYS.credits),
     settings: getSettings(),
   }
-        }
+}

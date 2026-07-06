@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { addTransaction, payProvider } from '../lib/storage'
+import ConfirmDialog from './ConfirmDialog'
+import { formatCOP } from './StatCard'
 
 const CATEGORIES = {
   ingreso: ['Ventas', 'Servicios', 'Otro ingreso'],
@@ -13,6 +15,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
   const [category, setCategory] = useState(CATEGORIES[defaultType][0])
   const [description, setDescription] = useState('')
   const [providerId, setProviderId] = useState('')
+  const [pendingSave, setPendingSave] = useState(false)
 
   function handleTypeChange(next) {
     setType(next)
@@ -20,29 +23,26 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
     if (next === 'ingreso') setProviderId('')
   }
 
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!amount || Number(amount) <= 0) return
-
-    // Confirmación explícita antes de descontar saldo en efectivo real
-    if (type === 'egreso') {
-      const formattedAmount = new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        maximumFractionDigits: 0,
-      }).format(Number(amount))
-      const confirmed = window.confirm(
-        `¿Confirmas este egreso de ${formattedAmount}?\n\nEsto descontará el monto de tu saldo en efectivo.`
-      )
-      if (!confirmed) return
-    }
-
+  function commitSave() {
     if (category === 'Pago a proveedor' && providerId) {
       payProvider({ providerId, amount, description })
     } else {
       addTransaction({ type, amount, category, description, providerId: providerId || null })
     }
+    setPendingSave(false)
     onSaved()
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!amount || Number(amount) <= 0) return
+
+    // Cualquier egreso pide permiso explícito antes de descontar saldo real
+    if (type === 'egreso') {
+      setPendingSave(true)
+      return
+    }
+    commitSave()
   }
 
   return (
@@ -145,6 +145,18 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
           </button>
         </form>
       </div>
+
+      {pendingSave && (
+        <ConfirmDialog
+          title="Confirmar egreso"
+          message={`Vas a registrar un egreso de ${formatCOP(Number(amount))}.\n\nEsto descontará el monto de tu saldo en efectivo. ¿Confirmas?`}
+          confirmLabel="Sí, descontar"
+          cancelLabel="Cancelar"
+          tone="egreso"
+          onConfirm={commitSave}
+          onCancel={() => setPendingSave(false)}
+        />
+      )}
     </div>
   )
-              }
+}

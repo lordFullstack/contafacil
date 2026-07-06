@@ -24,9 +24,9 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   }
 
   return (
-    <div className="pb-28">
+    <div className="pb-28 md:pb-10">
       {/* Encabezado */}
-      <header className="px-5 pt-6 pb-4">
+      <header className="px-5 pt-6 pb-4 md:px-0">
         <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
           {settings.companyName}
         </p>
@@ -34,19 +34,20 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       </header>
 
       {/* Tarjetas resumen */}
-      <div className="grid grid-cols-2 gap-3 px-5">
-        <div className="col-span-2">
+      <div className="grid grid-cols-2 gap-3 px-5 md:grid-cols-4 md:px-0">
+        <div className="col-span-2 md:col-span-1">
           <StatCard label="Saldo en efectivo" value={summary.saldo} icon={Wallet} tone="neutral" />
         </div>
-        <div className="col-span-2">
+        <div className="col-span-2 md:col-span-1">
           <StatCard label="Total del día (ingresos + gastos)" value={today.totalHoy} icon={Calculator} tone="neutral" />
         </div>
         <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" />
         <StatCard label="Gastos" value={summary.gastos} icon={TrendingDown} tone="egreso" />
       </div>
 
-      {/* Gráfica */}
-      <div className="mx-5 mt-4 rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card">
+      {/* Gráfica + movimientos recientes: lado a lado en escritorio */}
+      <div className="md:grid md:grid-cols-5 md:gap-4 md:px-0">
+      <div className="mx-5 mt-4 rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card md:col-span-3 md:mx-0">
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
           Últimos 7 días
         </p>
@@ -76,7 +77,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       </div>
 
       {/* Movimientos recientes */}
-      <div className="mx-5 mt-4">
+      <div className="mx-5 mt-4 md:col-span-2 md:mx-0">
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
           Movimientos recientes
         </p>
@@ -104,9 +105,10 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
           ))}
         </div>
       </div>
+      </div>
 
       {/* Exportar */}
-      <div className="mx-5 mt-4 grid grid-cols-2 gap-3">
+      <div className="mx-5 mt-4 grid grid-cols-2 gap-3 md:mx-0 md:max-w-sm">
         <button
           onClick={handleExportCSV}
           className="flex items-center justify-center gap-2 rounded-xl border border-base-600 bg-base-800 py-3 text-sm font-medium text-slate-200 active:scale-[0.98]"
@@ -124,7 +126,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       {/* Botón flotante */}
       <button
         onClick={() => setShowForm(true)}
-        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gold text-base-950 shadow-lg active:scale-95"
+        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gold text-base-950 shadow-lg active:scale-95 md:bottom-8"
       >
         <Plus size={26} strokeWidth={2.5} />
       </button>
@@ -141,4 +143,4 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       )}
     </div>
   )
-          }
+}

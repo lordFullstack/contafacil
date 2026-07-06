@@ -8,7 +8,7 @@ const TABS = [
 
 export default function BottomNav({ active, onChange }) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-base-700 bg-base-900/95 backdrop-blur safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-base-700 bg-base-900/95 backdrop-blur safe-bottom md:hidden">
       <div className="mx-auto flex max-w-md items-stretch justify-around">
         {TABS.map(({ id, label, icon: Icon }) => {
           const isActive = active === id

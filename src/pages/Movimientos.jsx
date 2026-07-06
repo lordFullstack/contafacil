@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Plus, Trash2, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import { formatCOP } from '../components/StatCard'
 import TransactionForm from '../components/TransactionForm'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { getTransactions, getProviders, deleteTransaction } from '../lib/storage'
 
 const FILTERS = [
@@ -13,6 +14,7 @@ const FILTERS = [
 export default function Movimientos({ refreshKey, onDataChanged }) {
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState('todos')
+  const [pendingDelete, setPendingDelete] = useState(null) // transacción completa
 
   const providers = useMemo(() => getProviders(), [refreshKey])
   const providerMap = useMemo(() => Object.fromEntries(providers.map((p) => [p.id, p.name])), [providers])
@@ -23,20 +25,22 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
     return all.filter((t) => t.type === filter)
   }, [refreshKey, filter])
 
-  function handleDelete(id) {
-    deleteTransaction(id)
+  function confirmDelete() {
+    if (!pendingDelete) return
+    deleteTransaction(pendingDelete.id)
+    setPendingDelete(null)
     onDataChanged()
   }
 
   return (
-    <div className="pb-28">
-      <header className="px-5 pt-6 pb-4">
+    <div className="pb-28 md:pb-10">
+      <header className="px-5 pt-6 pb-4 md:px-0">
         <h1 className="font-display text-2xl font-bold text-slate-50">Movimientos</h1>
         <p className="text-sm text-slate-500">Historial de ingresos y egresos</p>
       </header>
 
       {/* Filtros */}
-      <div className="flex gap-2 px-5">
+      <div className="flex gap-2 px-5 md:px-0">
         {FILTERS.map((f) => (
           <button
             key={f.id}
@@ -53,7 +57,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
       </div>
 
       {/* Lista */}
-      <div className="mx-5 mt-4 divide-y divide-base-700 rounded-2xl border border-base-700 bg-base-900 shadow-card">
+      <div className="mx-5 mt-4 divide-y divide-base-700 rounded-2xl border border-base-700 bg-base-900 shadow-card md:mx-0">
         {transactions.length === 0 && (
           <p className="p-4 text-sm text-slate-500">No hay movimientos para este filtro.</p>
         )}
@@ -84,7 +88,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
               {formatCOP(t.amount)}
             </span>
             <button
-              onClick={() => handleDelete(t.id)}
+              onClick={() => setPendingDelete(t)}
               className="shrink-0 rounded-full p-1.5 text-slate-600 hover:bg-base-800 hover:text-egreso"
             >
               <Trash2 size={16} />
@@ -95,7 +99,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
 
       <button
         onClick={() => setShowForm(true)}
-        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gold text-base-950 shadow-lg active:scale-95"
+        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gold text-base-950 shadow-lg active:scale-95 md:bottom-8"
       >
         <Plus size={26} strokeWidth={2.5} />
       </button>
@@ -108,6 +112,22 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
             setShowForm(false)
             onDataChanged()
           }}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Eliminar movimiento"
+          message={
+            pendingDelete.type === 'ingreso'
+              ? `Vas a eliminar un ingreso de ${formatCOP(pendingDelete.amount)}.\n\nEsto RESTARÁ ese monto de tu saldo en efectivo. ¿Confirmas?`
+              : `Vas a eliminar un egreso de ${formatCOP(pendingDelete.amount)}.\n\nEsto SUMARÁ ese monto de vuelta a tu saldo en efectivo. ¿Confirmas?`
+          }
+          confirmLabel="Sí, eliminar"
+          cancelLabel="Cancelar"
+          tone="egreso"
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
         />
       )}
     </div>

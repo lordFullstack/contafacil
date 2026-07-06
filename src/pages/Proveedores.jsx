@@ -3,11 +3,13 @@ import { Plus, Phone, CreditCard, CheckCircle2, Trash2 } from 'lucide-react'
 import { formatCOP } from '../components/StatCard'
 import ProviderForm from '../components/ProviderForm'
 import TransactionForm from '../components/TransactionForm'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { getProviders, getCredits, markCreditPaid, deleteProvider } from '../lib/storage'
 
 export default function Proveedores({ refreshKey, onDataChanged }) {
   const [showProviderForm, setShowProviderForm] = useState(false)
   const [payingProvider, setPayingProvider] = useState(null)
+  const [pendingCredit, setPendingCredit] = useState(null) // { id, amount, providerName }
 
   const providers = useMemo(() => getProviders(), [refreshKey])
   const credits = useMemo(() => getCredits(), [refreshKey])
@@ -23,17 +25,10 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
     return map
   }, [credits])
 
-  function handlePayCredit(id, amount, providerName) {
-    const formattedAmount = new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      maximumFractionDigits: 0,
-    }).format(amount)
-    const confirmed = window.confirm(
-      `¿Confirmas el pago de ${formattedAmount} a ${providerName}?\n\nEsto descontará el monto de tu saldo en efectivo.`
-    )
-    if (!confirmed) return
-    markCreditPaid(id)
+  function confirmPayCredit() {
+    if (!pendingCredit) return
+    markCreditPaid(pendingCredit.id)
+    setPendingCredit(null)
     onDataChanged()
   }
 
@@ -47,15 +42,15 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
   }
 
   return (
-    <div className="pb-28">
-      <header className="px-5 pt-6 pb-4">
+    <div className="pb-28 md:pb-10">
+      <header className="px-5 pt-6 pb-4 md:px-0">
         <h1 className="font-display text-2xl font-bold text-slate-50">Proveedores</h1>
         <p className="text-sm text-slate-500">{providers.length} registrados</p>
       </header>
 
-      <div className="mx-5 space-y-3">
+      <div className="mx-5 grid grid-cols-1 gap-3 md:mx-0 md:grid-cols-2">
         {providers.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-base-600 p-6 text-center text-sm text-slate-500">
+          <div className="rounded-2xl border border-dashed border-base-600 p-6 text-center text-sm text-slate-500 md:col-span-2">
             Aún no tienes proveedores. Agrega el primero con el botón +.
           </div>
         )}
@@ -108,7 +103,7 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-slate-300">{formatCOP(c.amount)}</span>
                           <button
-                            onClick={() => handlePayCredit(c.id, c.amount, p.name)}
+                            onClick={() => setPendingCredit({ id: c.id, amount: c.amount, providerName: p.name })}
                             className="text-ingreso hover:text-ingreso/80"
                             title="Marcar como pagado"
                           >
@@ -134,7 +129,7 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
 
       <button
         onClick={() => setShowProviderForm(true)}
-        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-tealed text-base-950 shadow-lg active:scale-95"
+        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-tealed text-base-950 shadow-lg active:scale-95 md:bottom-8"
       >
         <Plus size={26} strokeWidth={2.5} />
       </button>
@@ -160,6 +155,18 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
           }}
         />
       )}
+
+      {pendingCredit && (
+        <ConfirmDialog
+          title="Confirmar pago de crédito"
+          message={`Vas a pagar ${formatCOP(pendingCredit.amount)} a ${pendingCredit.providerName}.\n\nEsto descontará el monto de tu saldo en efectivo. ¿Confirmas?`}
+          confirmLabel="Sí, pagar"
+          cancelLabel="Cancelar"
+          tone="egreso"
+          onConfirm={confirmPayCredit}
+          onCancel={() => setPendingCredit(null)}
+        />
+      )}
     </div>
   )
-                  }
+}
