@@ -37,7 +37,8 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
     e.preventDefault()
     if (!amount || Number(amount) <= 0) return
 
-    // Cualquier egreso pide permiso explícito antes de descontar saldo real
+    // Cualquier egreso pide confirmación explícita antes de registrarse
+    // (el egreso ya no afecta el saldo en efectivo, solo se registra como gasto aparte)
     if (type === 'egreso') {
       setPendingSave(true)
       return
@@ -149,8 +150,8 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
       {pendingSave && (
         <ConfirmDialog
           title="Confirmar egreso"
-          message={`Vas a registrar un egreso de ${formatCOP(Number(amount))}.\n\nEsto descontará el monto de tu saldo en efectivo. ¿Confirmas?`}
-          confirmLabel="Sí, descontar"
+          message={`Vas a registrar un egreso de ${formatCOP(Number(amount))}.\n\nEste monto se contará como gasto, pero no descuenta tu saldo en efectivo. ¿Confirmas?`}
+          confirmLabel="Sí, registrar"
           cancelLabel="Cancelar"
           tone="egreso"
           onConfirm={commitSave}
@@ -159,4 +160,4 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
       )}
     </div>
   )
-}
+                               }
