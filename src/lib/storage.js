@@ -183,9 +183,9 @@ export function getTodaySummary() {
   return {
     ingresosHoy,
     gastosHoy,
-    // Igual que en getSummary: el total del día es solo el efectivo que entró,
-    // los gastos no se restan.
-    totalHoy: ingresosHoy,
+    // Total venta = suma de TODOS los movimientos del día (ingresos + gastos),
+    // sin importar el tipo. No es el saldo en efectivo, es el total de actividad del día.
+    totalHoy: ingresosHoy + gastosHoy,
   }
 }
 
