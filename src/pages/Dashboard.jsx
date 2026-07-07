@@ -3,11 +3,22 @@ import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Upload, Plus, Cal
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import StatCard, { formatCOP } from '../components/StatCard'
 import TransactionForm from '../components/TransactionForm'
-import { getSummary, getTodaySummary, getDailySeries, getTransactions, getProviders, getFullBackup, importFullBackup } from '../lib/storage'
+import ConfirmDialog from '../components/ConfirmDialog'
+import {
+  getSummary,
+  getTodaySummary,
+  getDailySeries,
+  getTransactions,
+  getProviders,
+  getFullBackup,
+  restoreFromBackup,
+} from '../lib/storage'
 import { exportTransactionsToCSV, exportJSONBackup } from '../lib/export'
 
 export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   const [showForm, setShowForm] = useState(false)
+  const [pendingImport, setPendingImport] = useState(null) // datos parseados, esperando confirmación
+  const [importError, setImportError] = useState('')
   const fileInputRef = useRef(null)
 
   const summary = useMemo(() => getSummary(), [refreshKey])
@@ -25,36 +36,39 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   }
 
   function handleImportClick() {
+    setImportError('')
     fileInputRef.current?.click()
   }
 
-  function handleImportFile(e) {
-    const file = e.target.files[0]
+  function handleFileSelected(e) {
+    const file = e.target.files?.[0]
     if (!file) return
 
-    const confirmado = window.confirm(
-      'Esto reemplazará los datos actuales (ventas, proveedores y créditos) con los del archivo de backup. ¿Deseas continuar?'
-    )
-    if (!confirmado) {
-      e.target.value = ''
-      return
-    }
-
     const reader = new FileReader()
-    reader.onload = (event) => {
+    reader.onload = () => {
       try {
-        const data = JSON.parse(event.target.result)
-        importFullBackup(data)
-        onDataChanged()
-        alert('Backup importado correctamente.')
+        const parsed = JSON.parse(reader.result)
+        setPendingImport(parsed)
       } catch (err) {
-        alert(err.message || 'No se pudo importar el archivo.')
-      } finally {
-        e.target.value = '' // permite volver a subir el mismo archivo si es necesario
+        setImportError('El archivo no es un JSON válido de backup.')
       }
     }
-    reader.onerror = () => alert('No se pudo leer el archivo.')
+    reader.onerror = () => setImportError('No se pudo leer el archivo.')
     reader.readAsText(file)
+
+    // Limpia el input para poder volver a seleccionar el mismo archivo si hace falta
+    e.target.value = ''
+  }
+
+  function confirmImport() {
+    try {
+      restoreFromBackup(pendingImport)
+      setPendingImport(null)
+      onDataChanged()
+    } catch (err) {
+      setImportError(err.message || 'No se pudo restaurar el backup.')
+      setPendingImport(null)
+    }
   }
 
   return (
@@ -70,10 +84,10 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       {/* Tarjetas resumen */}
       <div className="grid grid-cols-2 gap-3 px-5 md:grid-cols-4 md:px-0">
         <div className="col-span-2 md:col-span-1">
-          <StatCard label="Efectivo en caja" value={summary.saldo} icon={Wallet} tone="neutral" />
+          <StatCard label="Saldo en efectivo" value={summary.saldo} icon={Wallet} tone="neutral" />
         </div>
         <div className="col-span-2 md:col-span-1">
-          <StatCard label="Total venta" value={today.totalHoy} icon={Calculator} tone="neutral" />
+          <StatCard label="Total del día (ingresos + gastos)" value={today.totalHoy} icon={Calculator} tone="neutral" />
         </div>
         <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" />
         <StatCard label="Gastos" value={summary.gastos} icon={TrendingDown} tone="egreso" />
@@ -157,17 +171,20 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
         </button>
         <button
           onClick={handleImportClick}
-          className="col-span-2 flex items-center justify-center gap-2 rounded-xl border border-base-600 bg-base-800 py-3 text-sm font-medium text-slate-200 active:scale-[0.98]"
+          className="col-span-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-base-600 py-3 text-sm font-medium text-slate-400 active:scale-[0.98]"
         >
-          <Upload size={16} /> Importar backup
+          <Upload size={16} /> Importar backup (JSON)
         </button>
         <input
           ref={fileInputRef}
           type="file"
-          accept="application/json"
-          onChange={handleImportFile}
+          accept="application/json,.json"
+          onChange={handleFileSelected}
           className="hidden"
         />
+        {importError && (
+          <p className="col-span-2 text-xs text-egreso">{importError}</p>
+        )}
       </div>
 
       {/* Botón flotante */}
@@ -188,8 +205,24 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
           }}
         />
       )}
+
+      {pendingImport && (
+        <ConfirmDialog
+          title="Restaurar backup"
+          message={
+            `Vas a reemplazar TODOS los datos actuales (movimientos, proveedores y créditos) con el contenido de este archivo` +
+            (pendingImport.exportedAt
+              ? ` (exportado el ${new Date(pendingImport.exportedAt).toLocaleDateString('es-CO')}).`
+              : '.') +
+            `\n\nEsta acción no se puede deshacer. ¿Confirmas?`
+          }
+          confirmLabel="Sí, restaurar"
+          cancelLabel="Cancelar"
+          tone="egreso"
+          onConfirm={confirmImport}
+          onCancel={() => setPendingImport(null)}
+        />
+      )}
     </div>
   )
-                  }
-
-      
+}
