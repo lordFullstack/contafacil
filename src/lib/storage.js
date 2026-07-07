@@ -262,3 +262,7 @@ export function restoreFromBackup(data) {
   if (Array.isArray(data.credits)) write(KEYS.credits, data.credits)
   if (data.settings && typeof data.settings === 'object') write(KEYS.settings, data.settings)
 }
+
+// Alias por compatibilidad, en caso de que algún archivo importe con este otro nombre
+export const importFullBackup = restoreFromBackup
+    
