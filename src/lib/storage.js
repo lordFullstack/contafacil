@@ -158,6 +158,9 @@ export function deleteCredit(id) {
 
 // ---------- Cálculos para el Dashboard ----------
 
+// El "saldo en efectivo" es el total de ingresos que han entrado a caja.
+// Los gastos se registran y se muestran por separado, para control y reportes,
+// pero NUNCA se restan del saldo en efectivo — así es como el cliente maneja su caja.
 export function getSummary() {
   const txs = read(KEYS.transactions)
   const ingresos = txs.filter((t) => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0)
@@ -165,26 +168,23 @@ export function getSummary() {
   return {
     ingresos,
     gastos,
-    // Saldo en efectivo = solo lo que ha entrado a caja (ingresos).
-    // Los gastos se muestran aparte y NO descuentan del saldo.
     saldo: ingresos,
   }
 }
 
-// Mismo resumen que getSummary(), pero acotado a los movimientos de hoy
+// Resumen del día actual: ingresos, gastos y el TOTAL (suma de ambos),
+// útil para cuadre de caja diario — no confundir con "saldo" (que es la resta acumulada).
 export function getTodaySummary() {
   const txs = read(KEYS.transactions)
   const todayKey = new Date().toISOString().slice(0, 10)
   const todayTxs = txs.filter((t) => t.date.slice(0, 10) === todayKey)
 
-  const ingresosHoy = todayTxs.filter((t) => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0)
-  const gastosHoy = todayTxs.filter((t) => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0)
+  const ingresosHoy = todayTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
+  const gastosHoy = todayTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
 
   return {
     ingresosHoy,
     gastosHoy,
-    // Total venta = suma de TODOS los movimientos del día (ingresos + gastos),
-    // sin importar el tipo. No es el saldo en efectivo, es el total de actividad del día.
     totalHoy: ingresosHoy + gastosHoy,
   }
 }
@@ -251,26 +251,14 @@ export function getFullBackup() {
   }
 }
 
-// Restaura un backup completo generado por getFullBackup().
-// Sobrescribe los datos actuales en localStorage con los del archivo.
-export function importFullBackup(data) {
+// Restaura TODOS los datos desde un backup JSON exportado previamente.
+// Esto REEMPLAZA por completo lo que haya guardado actualmente en localStorage.
+export function restoreFromBackup(data) {
   if (!data || typeof data !== 'object') {
-    throw new Error('Archivo de backup inválido.')
+    throw new Error('El archivo no tiene un formato de backup válido.')
   }
-
-  const camposValidos = ['transactions', 'providers', 'credits', 'settings']
-  const tieneAlgunCampo = camposValidos.some((campo) => campo in data)
-  if (!tieneAlgunCampo) {
-    throw new Error('El archivo no tiene el formato de un backup de ContaFácil.')
-  }
-
   if (Array.isArray(data.transactions)) write(KEYS.transactions, data.transactions)
   if (Array.isArray(data.providers)) write(KEYS.providers, data.providers)
   if (Array.isArray(data.credits)) write(KEYS.credits, data.credits)
   if (data.settings && typeof data.settings === 'object') write(KEYS.settings, data.settings)
-
-  return true
 }
-
-
-  
