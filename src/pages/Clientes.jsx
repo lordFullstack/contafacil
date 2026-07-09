@@ -148,7 +148,8 @@ export default function Clientes({ refreshKey, onDataChanged }) {
 
       {creditingCustomerId && (
         <ClientCreditForm
-          customerId={creditingCustomerId}
+          customers={customers}
+          defaultCustomerId={creditingCustomerId}
           onClose={() => setCreditingCustomerId(null)}
           onSaved={() => {
             setCreditingCustomerId(null)
@@ -159,11 +160,11 @@ export default function Clientes({ refreshKey, onDataChanged }) {
 
       {pendingCollect && (
         <ConfirmDialog
-          title="Confirmar cobro de fiado"
-          message={`Vas a registrar el cobro de ${formatCOP(pendingCollect.amount)} a ${pendingCollect.customerName}.\n\nEste monto se guarda en el control de ingresos. ¿Confirmas?`}
-          confirmLabel="Sí, registrar"
+          title="Confirmar cobro"
+          message={`Vas a registrar el cobro de ${formatCOP(pendingCollect.amount)} a ${pendingCollect.customerName}.\n\nEste monto SÍ entra como ingreso real a tu saldo en efectivo (el cliente te está pagando). ¿Confirmas?`}
+          confirmLabel="Sí, cobrar"
           cancelLabel="Cancelar"
-          tone="ingreso"
+          tone="neutral"
           onConfirm={confirmCollect}
           onCancel={() => setPendingCollect(null)}
         />
