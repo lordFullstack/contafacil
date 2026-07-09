@@ -8,6 +8,8 @@ import {
   getSummary,
   getTodaySummary,
   getDailySeries,
+  getMonthlySeries,
+  getYearlySeries,
   getTransactions,
   getProviders,
   getFullBackup,
@@ -19,11 +21,17 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   const [showForm, setShowForm] = useState(false)
   const [pendingImport, setPendingImport] = useState(null) // datos parseados, esperando confirmación
   const [importError, setImportError] = useState('')
+  const [period, setPeriod] = useState('dia') // 'dia' | 'mes' | 'anio'
   const fileInputRef = useRef(null)
 
   const summary = useMemo(() => getSummary(), [refreshKey])
   const today = useMemo(() => getTodaySummary(), [refreshKey])
-  const series = useMemo(() => getDailySeries(7), [refreshKey])
+  const series = useMemo(() => {
+    if (period === 'mes') return getMonthlySeries(6)
+    if (period === 'anio') return getYearlySeries(5)
+    return getDailySeries(7)
+  }, [refreshKey, period])
+  const chartTitle = { dia: 'Últimos 7 días', mes: 'Últimos 6 meses', anio: 'Últimos 5 años' }[period]
   const recent = useMemo(() => getTransactions().slice(0, 5), [refreshKey])
   const providers = useMemo(() => getProviders(), [refreshKey])
 
@@ -96,9 +104,26 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       {/* Gráfica + movimientos recientes: lado a lado en escritorio */}
       <div className="md:grid md:grid-cols-5 md:gap-4 md:px-0">
       <div className="mx-5 mt-4 rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card md:col-span-3 md:mx-0">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
-          Últimos 7 días
-        </p>
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{chartTitle}</p>
+          <div className="flex gap-1 rounded-lg bg-base-800 p-0.5">
+            {[
+              { id: 'dia', label: 'Día' },
+              { id: 'mes', label: 'Mes' },
+              { id: 'anio', label: 'Año' },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setPeriod(opt.id)}
+                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                  period === opt.id ? 'bg-brand-gold text-base-950' : 'text-slate-400'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height={160}>
           <AreaChart data={series} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
@@ -225,4 +250,4 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       )}
     </div>
   )
-}
+        }
