@@ -128,3 +128,44 @@ export default function Clientes({ refreshKey, onDataChanged }) {
           )
         })}
       </div>
+
+      <button
+        onClick={() => setShowCustomerForm(true)}
+        className="fixed bottom-24 right-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand-teal text-base-950 shadow-lg active:scale-95 md:bottom-10"
+        aria-label="Agregar cliente"
+      >
+        <Plus size={24} />
+      </button>
+
+      {showCustomerForm && (
+        <CustomerForm
+          onClose={() => setShowCustomerForm(false)}
+          onSaved={() => {
+            setShowCustomerForm(false)
+            onDataChanged()
+          }}
+        />
+      )}
+
+      {creditingCustomerId && (
+        <ClientCreditForm
+          customerId={creditingCustomerId}
+          onClose={() => setCreditingCustomerId(null)}
+          onSaved={() => {
+            setCreditingCustomerId(null)
+            onDataChanged()
+          }}
+        />
+      )}
+
+      {pendingCollect && (
+        <ConfirmDialog
+          title="Marcar como cobrado"
+          message={`¿Confirmas que ${pendingCollect.customerName} pagó ${formatCOP(pendingCollect.amount)}?`}
+          onCancel={() => setPendingCollect(null)}
+          onConfirm={confirmCollect}
+        />
+      )}
+    </div>
+  )
+}
