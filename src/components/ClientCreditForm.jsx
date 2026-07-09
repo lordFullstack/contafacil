@@ -93,4 +93,4 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
       </div>
     </div>
   )
-      }
+}
