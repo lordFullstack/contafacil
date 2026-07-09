@@ -1,9 +1,10 @@
-import { LayoutGrid, ArrowLeftRight, Users } from 'lucide-react'
+import { LayoutGrid, ArrowLeftRight, Users, HandCoins } from 'lucide-react'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
   { id: 'movimientos', label: 'Movimientos', icon: ArrowLeftRight },
   { id: 'proveedores', label: 'Proveedores', icon: Users },
+  { id: 'clientes', label: 'Clientes', icon: HandCoins },
 ]
 
 export default function BottomNav({ active, onChange }) {
