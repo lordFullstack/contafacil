@@ -189,7 +189,7 @@ export function getTodaySummary() {
   }
 }
 
-// Agrupa movimientos de los últimos N días para la gráfica
+// Agrupa movimientos de los últimos N días para la gráfica (vista "Día")
 export function getDailySeries(days = 7) {
   const txs = read(KEYS.transactions)
   const today = new Date()
@@ -206,6 +206,48 @@ export function getDailySeries(days = 7) {
     const gastos = dayTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
 
     series.push({ label, ingresos, gastos })
+  }
+  return series
+}
+
+// Agrupa movimientos por mes, últimos N meses (vista "Mes")
+export function getMonthlySeries(monthsCount = 6) {
+  const txs = read(KEYS.transactions)
+  const today = new Date()
+  const series = []
+
+  for (let i = monthsCount - 1; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+    const year = d.getFullYear()
+    const month = d.getMonth()
+    const label = d.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' })
+
+    const monthTxs = txs.filter((t) => {
+      const td = new Date(t.date)
+      return td.getFullYear() === year && td.getMonth() === month
+    })
+    const ingresos = monthTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
+    const gastos = monthTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
+
+    series.push({ label, ingresos, gastos })
+  }
+  return series
+}
+
+// Agrupa movimientos por año, últimos N años (vista "Año")
+export function getYearlySeries(yearsCount = 5) {
+  const txs = read(KEYS.transactions)
+  const currentYear = new Date().getFullYear()
+  const series = []
+
+  for (let i = yearsCount - 1; i >= 0; i--) {
+    const year = currentYear - i
+
+    const yearTxs = txs.filter((t) => new Date(t.date).getFullYear() === year)
+    const ingresos = yearTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
+    const gastos = yearTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
+
+    series.push({ label: String(year), ingresos, gastos })
   }
   return series
 }
@@ -265,4 +307,3 @@ export function restoreFromBackup(data) {
 
 // Alias por compatibilidad, en caso de que algún archivo importe con este otro nombre
 export const importFullBackup = restoreFromBackup
-    
