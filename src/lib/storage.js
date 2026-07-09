@@ -9,6 +9,8 @@ const KEYS = {
   transactions: 'cf_transactions',
   providers: 'cf_providers',
   credits: 'cf_credits',
+  customers: 'cf_customers',
+  clientCredits: 'cf_client_credits',
   settings: 'cf_settings',
 }
 
@@ -156,6 +158,80 @@ export function deleteCredit(id) {
   write(KEYS.credits, list)
 }
 
+// ---------- Clientes (a quienes LES fiamos — cuentas por cobrar) ----------
+
+export function getCustomers() {
+  return read(KEYS.customers).sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export function addCustomer({ name, phone, notes }) {
+  const list = read(KEYS.customers)
+  const item = {
+    id: uid('cust'),
+    name,
+    phone: phone || '',
+    notes: notes || '',
+    createdAt: new Date().toISOString(),
+  }
+  list.push(item)
+  write(KEYS.customers, list)
+  return item
+}
+
+export function deleteCustomer(id) {
+  const list = read(KEYS.customers).filter((c) => c.id !== id)
+  write(KEYS.customers, list)
+}
+
+// ---------- Créditos a clientes (cuentas por cobrar) ----------
+// Representan dinero que un cliente TE debe (le fiaste una venta).
+// A diferencia de los créditos con proveedores, cuando se pagan generan
+// un INGRESO real (el cliente te está devolviendo efectivo).
+
+export function getClientCredits() {
+  return read(KEYS.clientCredits).sort(
+    (a, b) => new Date(a.dueDate || a.date) - new Date(b.dueDate || b.date)
+  )
+}
+
+export function addClientCredit({ customerId, amount, description, date, dueDate }) {
+  const list = read(KEYS.clientCredits)
+  const item = {
+    id: uid('ccred'),
+    customerId,
+    amount: Number(amount),
+    description: description || '',
+    date: date || new Date().toISOString(),
+    dueDate: dueDate || null,
+    status: 'pendiente',
+  }
+  list.push(item)
+  write(KEYS.clientCredits, list)
+  return item
+}
+
+export function markClientCreditPaid(id) {
+  const list = read(KEYS.clientCredits)
+  const credit = list.find((c) => c.id === id)
+  if (!credit) return null
+  credit.status = 'pagado'
+  write(KEYS.clientCredits, list)
+  // El cliente paga lo que debía: esto SÍ entra como ingreso real de caja
+  addTransaction({
+    type: 'ingreso',
+    amount: credit.amount,
+    category: 'Cobro de crédito',
+    description: `Cobro de crédito: ${credit.description}`,
+    date: new Date().toISOString(),
+  })
+  return credit
+}
+
+export function deleteClientCredit(id) {
+  const list = read(KEYS.clientCredits).filter((c) => c.id !== id)
+  write(KEYS.clientCredits, list)
+}
+
 // ---------- Cálculos para el Dashboard ----------
 
 // El "saldo en efectivo" es el total de ingresos que han entrado a caja.
@@ -289,6 +365,8 @@ export function getFullBackup() {
     transactions: read(KEYS.transactions),
     providers: read(KEYS.providers),
     credits: read(KEYS.credits),
+    customers: read(KEYS.customers),
+    clientCredits: read(KEYS.clientCredits),
     settings: getSettings(),
   }
 }
@@ -302,6 +380,8 @@ export function restoreFromBackup(data) {
   if (Array.isArray(data.transactions)) write(KEYS.transactions, data.transactions)
   if (Array.isArray(data.providers)) write(KEYS.providers, data.providers)
   if (Array.isArray(data.credits)) write(KEYS.credits, data.credits)
+  if (Array.isArray(data.customers)) write(KEYS.customers, data.customers)
+  if (Array.isArray(data.clientCredits)) write(KEYS.clientCredits, data.clientCredits)
   if (data.settings && typeof data.settings === 'object') write(KEYS.settings, data.settings)
 }
 
