@@ -15,6 +15,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
   const [category, setCategory] = useState(CATEGORIES[defaultType][0])
   const [description, setDescription] = useState('')
   const [providerId, setProviderId] = useState('')
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10)) // YYYY-MM-DD, hoy por defecto
   const [pendingSave, setPendingSave] = useState(false)
 
   function handleTypeChange(next) {
@@ -23,11 +24,20 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
     if (next === 'ingreso') setProviderId('')
   }
 
+  // Convierte "YYYY-MM-DD" (del input) a un ISO con la hora actual,
+  // para no perder el orden de "más reciente primero" entre movimientos del mismo día.
+  function dateToISO(dateStr) {
+    const now = new Date()
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString()
+  }
+
   function commitSave() {
+    const isoDate = dateToISO(date)
     if (category === 'Pago a proveedor' && providerId) {
-      payProvider({ providerId, amount, description })
+      payProvider({ providerId, amount, description, date: isoDate })
     } else {
-      addTransaction({ type, amount, category, description, providerId: providerId || null })
+      addTransaction({ type, amount, category, description, providerId: providerId || null, date: isoDate })
     }
     setPendingSave(false)
     onSaved()
@@ -78,6 +88,18 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-400">Fecha</label>
+            <input
+              type="date"
+              required
+              value={date}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold [color-scheme:dark]"
+            />
+          </div>
+
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-400">Monto (COP)</label>
             <input
@@ -159,4 +181,4 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
       )}
     </div>
   )
-}
+      }
