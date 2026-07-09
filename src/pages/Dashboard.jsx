@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Upload, Plus, Calculator } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Upload, Plus, Calculator, Layers } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import StatCard, { formatCOP } from '../components/StatCard'
 import TransactionForm from '../components/TransactionForm'
@@ -99,6 +99,14 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
         </div>
         <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" />
         <StatCard label="Gastos" value={summary.gastos} icon={TrendingDown} tone="egreso" />
+        <div className="col-span-2 md:col-span-4">
+          <StatCard
+            label="Total global (ingresos + gastos, histórico)"
+            value={summary.ingresos + summary.gastos}
+            icon={Layers}
+            tone="neutral"
+          />
+        </div>
       </div>
 
       {/* Gráfica + movimientos recientes: lado a lado en escritorio */}
@@ -250,4 +258,4 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       )}
     </div>
   )
-        }
+}
