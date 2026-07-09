@@ -131,10 +131,9 @@ export default function Clientes({ refreshKey, onDataChanged }) {
 
       <button
         onClick={() => setShowCustomerForm(true)}
-        className="fixed bottom-24 right-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand-teal text-base-950 shadow-lg active:scale-95 md:bottom-10"
-        aria-label="Agregar cliente"
+        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-tealed text-base-950 shadow-lg active:scale-95 md:bottom-8"
       >
-        <Plus size={24} />
+        <Plus size={26} strokeWidth={2.5} />
       </button>
 
       {showCustomerForm && (
@@ -160,10 +159,13 @@ export default function Clientes({ refreshKey, onDataChanged }) {
 
       {pendingCollect && (
         <ConfirmDialog
-          title="Marcar como cobrado"
-          message={`¿Confirmas que ${pendingCollect.customerName} pagó ${formatCOP(pendingCollect.amount)}?`}
-          onCancel={() => setPendingCollect(null)}
+          title="Confirmar cobro de fiado"
+          message={`Vas a registrar el cobro de ${formatCOP(pendingCollect.amount)} a ${pendingCollect.customerName}.\n\nEste monto se guarda en el control de ingresos. ¿Confirmas?`}
+          confirmLabel="Sí, registrar"
+          cancelLabel="Cancelar"
+          tone="ingreso"
           onConfirm={confirmCollect}
+          onCancel={() => setPendingCollect(null)}
         />
       )}
     </div>
