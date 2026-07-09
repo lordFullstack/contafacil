@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Movimientos from './pages/Movimientos'
 import Proveedores from './pages/Proveedores'
+import Clientes from './pages/Clientes'
 import { getSettings } from './lib/storage'
 
 export default function App() {
@@ -32,6 +33,9 @@ export default function App() {
         )}
         {tab === 'proveedores' && (
           <Proveedores refreshKey={refreshKey} onDataChanged={handleDataChanged} />
+        )}
+        {tab === 'clientes' && (
+          <Clientes refreshKey={refreshKey} onDataChanged={handleDataChanged} />
         )}
       </div>
 
