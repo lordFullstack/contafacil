@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Upload, Plus, Calculator, Layers } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import StatCard, { formatCOP } from '../components/StatCard'
@@ -19,28 +19,51 @@ import { exportTransactionsToCSV, exportJSONBackup } from '../lib/export'
 
 export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   const [showForm, setShowForm] = useState(false)
-  const [pendingImport, setPendingImport] = useState(null) // datos parseados, esperando confirmación
+  const [pendingImport, setPendingImport] = useState(null)
   const [importError, setImportError] = useState('')
   const [period, setPeriod] = useState('dia') // 'dia' | 'mes' | 'anio'
   const fileInputRef = useRef(null)
 
-  const summary = useMemo(() => getSummary(), [refreshKey])
-  const today = useMemo(() => getTodaySummary(), [refreshKey])
-  const series = useMemo(() => {
-    if (period === 'mes') return getMonthlySeries(6)
-    if (period === 'anio') return getYearlySeries(5)
-    return getDailySeries(7)
-  }, [refreshKey, period])
-  const chartTitle = { dia: 'Últimos 7 días', mes: 'Últimos 6 meses', anio: 'Últimos 5 años' }[period]
-  const recent = useMemo(() => getTransactions().slice(0, 5), [refreshKey])
-  const providers = useMemo(() => getProviders(), [refreshKey])
+  const [loading, setLoading] = useState(true)
+  const [summary, setSummary] = useState({ ingresos: 0, gastos: 0, saldo: 0 })
+  const [today, setToday] = useState({ totalHoy: 0 })
+  const [series, setSeries] = useState([])
+  const [recent, setRecent] = useState([])
+  const [providers, setProviders] = useState([])
 
-  function handleExportCSV() {
-    exportTransactionsToCSV(getTransactions(), providers)
+  const chartTitle = { dia: 'Últimos 7 días', mes: 'Últimos 6 meses', anio: 'Últimos 5 años' }[period]
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+
+    const seriesPromise =
+      period === 'mes' ? getMonthlySeries(6) : period === 'anio' ? getYearlySeries(5) : getDailySeries(7)
+
+    Promise.all([getSummary(), getTodaySummary(), seriesPromise, getTransactions(), getProviders()])
+      .then(([s, t, ser, txs, provs]) => {
+        if (cancelled) return
+        setSummary(s)
+        setToday(t)
+        setSeries(ser)
+        setRecent(txs.slice(0, 5))
+        setProviders(provs)
+      })
+      .catch((err) => console.error('Error cargando el dashboard:', err))
+      .finally(() => !cancelled && setLoading(false))
+
+    return () => {
+      cancelled = true
+    }
+  }, [refreshKey, period])
+
+  async function handleExportCSV() {
+    const [txs, provs] = await Promise.all([getTransactions(), getProviders()])
+    exportTransactionsToCSV(txs, provs)
   }
 
-  function handleExportJSON() {
-    exportJSONBackup(getFullBackup())
+  async function handleExportJSON() {
+    exportJSONBackup(await getFullBackup())
   }
 
   function handleImportClick() {
@@ -63,14 +86,12 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
     }
     reader.onerror = () => setImportError('No se pudo leer el archivo.')
     reader.readAsText(file)
-
-    // Limpia el input para poder volver a seleccionar el mismo archivo si hace falta
     e.target.value = ''
   }
 
-  function confirmImport() {
+  async function confirmImport() {
     try {
-      restoreFromBackup(pendingImport)
+      await restoreFromBackup(pendingImport)
       setPendingImport(null)
       onDataChanged()
     } catch (err) {
@@ -88,6 +109,10 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
         </p>
         <h1 className="font-display text-2xl font-bold text-slate-50">Dashboard</h1>
       </header>
+
+      {loading && (
+        <p className="px-5 text-sm text-slate-500 md:px-0">Cargando datos...</p>
+      )}
 
       {/* Tarjetas resumen */}
       <div className="grid grid-cols-2 gap-3 px-5 md:grid-cols-4 md:px-0">
@@ -243,7 +268,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
         <ConfirmDialog
           title="Restaurar backup"
           message={
-            `Vas a reemplazar TODOS los datos actuales (movimientos, proveedores y créditos) con el contenido de este archivo` +
+            `Vas a reemplazar TODOS los datos actuales (movimientos, proveedores, clientes y créditos) con el contenido de este archivo` +
             (pendingImport.exportedAt
               ? ` (exportado el ${new Date(pendingImport.exportedAt).toLocaleDateString('es-CO')}).`
               : '.') +

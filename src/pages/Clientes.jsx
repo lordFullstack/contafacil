@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, Phone, HandCoins, CheckCircle2, Trash2 } from 'lucide-react'
 import { formatCOP } from '../components/StatCard'
 import CustomerForm from '../components/CustomerForm'
@@ -8,11 +8,28 @@ import { getCustomers, getClientCredits, markClientCreditPaid, deleteCustomer } 
 
 export default function Clientes({ refreshKey, onDataChanged }) {
   const [showCustomerForm, setShowCustomerForm] = useState(false)
-  const [creditingCustomerId, setCreditingCustomerId] = useState(null) // string | null
-  const [pendingCollect, setPendingCollect] = useState(null) // { id, amount, customerName }
+  const [creditingCustomerId, setCreditingCustomerId] = useState(null)
+  const [pendingCollect, setPendingCollect] = useState(null)
 
-  const customers = useMemo(() => getCustomers(), [refreshKey])
-  const credits = useMemo(() => getClientCredits(), [refreshKey])
+  const [loading, setLoading] = useState(true)
+  const [customers, setCustomers] = useState([])
+  const [credits, setCredits] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    Promise.all([getCustomers(), getClientCredits()])
+      .then(([custs, creds]) => {
+        if (cancelled) return
+        setCustomers(custs)
+        setCredits(creds)
+      })
+      .catch((err) => console.error('Error cargando clientes:', err))
+      .finally(() => !cancelled && setLoading(false))
+    return () => {
+      cancelled = true
+    }
+  }, [refreshKey])
 
   const creditsByCustomer = useMemo(() => {
     const map = {}
@@ -25,19 +42,19 @@ export default function Clientes({ refreshKey, onDataChanged }) {
     return map
   }, [credits])
 
-  function confirmCollect() {
+  async function confirmCollect() {
     if (!pendingCollect) return
-    markClientCreditPaid(pendingCollect.id)
+    await markClientCreditPaid(pendingCollect.id)
     setPendingCollect(null)
     onDataChanged()
   }
 
-  function handleDeleteCustomer(id) {
+  async function handleDeleteCustomer(id) {
     if (creditsByCustomer[id]?.length) {
       alert('Este cliente tiene créditos pendientes. Cóbralos o elimínalos primero.')
       return
     }
-    deleteCustomer(id)
+    await deleteCustomer(id)
     onDataChanged()
   }
 
@@ -48,8 +65,10 @@ export default function Clientes({ refreshKey, onDataChanged }) {
         <p className="text-sm text-slate-500">{customers.length} registrados · fiados (cuentas por cobrar)</p>
       </header>
 
+      {loading && <p className="px-5 text-sm text-slate-500 md:px-0">Cargando...</p>}
+
       <div className="mx-5 grid grid-cols-1 gap-3 md:mx-0 md:grid-cols-2">
-        {customers.length === 0 && (
+        {!loading && customers.length === 0 && (
           <div className="rounded-2xl border border-dashed border-base-600 p-6 text-center text-sm text-slate-500 md:col-span-2">
             Aún no tienes clientes. Agrega el primero con el botón +.
           </div>

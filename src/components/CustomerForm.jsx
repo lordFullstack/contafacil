@@ -6,12 +6,22 @@ export default function CustomerForm({ onClose, onSaved }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) return
-    addCustomer({ name, phone, notes })
-    onSaved()
+    setSaving(true)
+    setError('')
+    try {
+      await addCustomer({ name, phone, notes })
+      onSaved()
+    } catch (err) {
+      setError(err.message || 'No se pudo guardar el cliente.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -59,11 +69,14 @@ export default function CustomerForm({ onClose, onSaved }) {
             />
           </div>
 
+          {error && <p className="text-xs text-egreso">{error}</p>}
+
           <button
             type="submit"
-            className="w-full rounded-xl bg-brand-tealed py-3.5 text-center font-semibold text-base-950 active:scale-[0.98]"
+            disabled={saving}
+            className="w-full rounded-xl bg-brand-tealed py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
           >
-            Guardar cliente
+            {saving ? 'Guardando...' : 'Guardar cliente'}
           </button>
         </form>
       </div>

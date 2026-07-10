@@ -1,110 +1,131 @@
 // ─────────────────────────────────────────────────────────
-// Capa de persistencia local. Toda la app lee/escribe SOLO aquí.
-// El día de mañana, migrar a Supabase/Firebase implica reemplazar
-// el contenido de estas funciones (mismo "contrato" de entrada/salida),
-// sin tocar los componentes que las consumen.
+// Capa de persistencia. Toda la app lee/escribe SOLO aquí.
+// Antes usaba localStorage; ahora usa Supabase (base de datos real en la nube),
+// así que TODAS las funciones son asíncronas (devuelven promesas).
 // ─────────────────────────────────────────────────────────
+import { supabase } from './supabaseClient'
 
-const KEYS = {
-  transactions: 'cf_transactions',
-  providers: 'cf_providers',
-  credits: 'cf_credits',
-  customers: 'cf_customers',
-  clientCredits: 'cf_client_credits',
-  settings: 'cf_settings',
-}
-
-// ---------- utilidades base ----------
-
-function read(key) {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : []
-  } catch (e) {
-    console.error(`Error leyendo ${key} de localStorage`, e)
-    return []
+function mustNotError(error, context) {
+  if (error) {
+    console.error(`Error en ${context}:`, error)
+    throw new Error(error.message || `Error en ${context}`)
   }
 }
 
-function write(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value))
-    return true
-  } catch (e) {
-    console.error(`Error escribiendo ${key} en localStorage`, e)
-    return false
+// ---------- Mapas fila de BD (snake_case) -> objeto de la app (camelCase) ----------
+
+function mapTransaction(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    amount: Number(row.amount),
+    category: row.category,
+    description: row.description || '',
+    date: row.date,
+    providerId: row.provider_id,
   }
 }
 
-function uid(prefix = 'id') {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+function mapProvider(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    nit: row.nit || '',
+    phone: row.phone || '',
+    category: row.category || 'General',
+    createdAt: row.created_at,
+  }
 }
 
-// ---------- Modelo de datos ----------
-// Transacción:
-// { id, type: 'ingreso' | 'egreso', amount, category, description, date (ISO), providerId? }
-//
-// Proveedor:
-// { id, name, nit, phone, category, createdAt }
-//
-// Crédito (cuenta por pagar a un proveedor):
-// { id, providerId, amount, description, date (ISO), dueDate (ISO)?, status: 'pendiente' | 'pagado' }
+function mapCredit(row) {
+  return {
+    id: row.id,
+    providerId: row.provider_id,
+    amount: Number(row.amount),
+    description: row.description || '',
+    date: row.date,
+    dueDate: row.due_date,
+    status: row.status,
+  }
+}
+
+function mapCustomer(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone || '',
+    notes: row.notes || '',
+    createdAt: row.created_at,
+  }
+}
+
+function mapClientCredit(row) {
+  return {
+    id: row.id,
+    customerId: row.customer_id,
+    amount: Number(row.amount),
+    description: row.description || '',
+    date: row.date,
+    dueDate: row.due_date,
+    status: row.status,
+  }
+}
 
 // ---------- Transacciones ----------
 
-export function getTransactions() {
-  return read(KEYS.transactions).sort((a, b) => new Date(b.date) - new Date(a.date))
+export async function getTransactions() {
+  const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false })
+  mustNotError(error, 'getTransactions')
+  return data.map(mapTransaction)
 }
 
-export function addTransaction({ type, amount, category, description, date, providerId = null }) {
-  const list = read(KEYS.transactions)
-  const item = {
-    id: uid('tx'),
-    type, // 'ingreso' | 'egreso'
-    amount: Number(amount),
-    category: category || (type === 'ingreso' ? 'Ventas' : 'Otro'),
-    description: description || '',
-    date: date || new Date().toISOString(),
-    providerId,
-  }
-  list.push(item)
-  write(KEYS.transactions, list)
-  return item
+export async function addTransaction({ type, amount, category, description, date, providerId = null }) {
+  const { data, error } = await supabase
+    .from('transactions')
+    .insert({
+      type,
+      amount: Number(amount),
+      category: category || (type === 'ingreso' ? 'Ventas' : 'Otro'),
+      description: description || '',
+      date: date || new Date().toISOString(),
+      provider_id: providerId,
+    })
+    .select()
+    .single()
+  mustNotError(error, 'addTransaction')
+  return mapTransaction(data)
 }
 
-export function deleteTransaction(id) {
-  const list = read(KEYS.transactions).filter((t) => t.id !== id)
-  write(KEYS.transactions, list)
+export async function deleteTransaction(id) {
+  const { error } = await supabase.from('transactions').delete().eq('id', id)
+  mustNotError(error, 'deleteTransaction')
 }
 
 // ---------- Proveedores ----------
 
-export function getProviders() {
-  return read(KEYS.providers).sort((a, b) => a.name.localeCompare(b.name))
+export async function getProviders() {
+  const { data, error } = await supabase.from('providers').select('*').order('name', { ascending: true })
+  mustNotError(error, 'getProviders')
+  return data.map(mapProvider)
 }
 
-export function addProvider({ name, nit, phone, category }) {
-  const list = read(KEYS.providers)
-  const item = {
-    id: uid('prov'),
-    name,
-    nit: nit || '',
-    phone: phone || '',
-    category: category || 'General',
-    createdAt: new Date().toISOString(),
-  }
-  list.push(item)
-  write(KEYS.providers, list)
-  return item
+export async function addProvider({ name, nit, phone, category }) {
+  const { data, error } = await supabase
+    .from('providers')
+    .insert({ name, nit: nit || '', phone: phone || '', category: category || 'General' })
+    .select()
+    .single()
+  mustNotError(error, 'addProvider')
+  return mapProvider(data)
 }
 
-export function deleteProvider(id) {
-  const list = read(KEYS.providers).filter((p) => p.id !== id)
-  write(KEYS.providers, list)
+export async function deleteProvider(id) {
+  const { error } = await supabase.from('providers').delete().eq('id', id)
+  mustNotError(error, 'deleteProvider')
 }
 
 // Pago a proveedor = crea una transacción tipo 'egreso' asociada a providerId
-export function payProvider({ providerId, amount, description, date }) {
+export async function payProvider({ providerId, amount, description, date }) {
   return addTransaction({
     type: 'egreso',
     amount,
@@ -115,121 +136,144 @@ export function payProvider({ providerId, amount, description, date }) {
   })
 }
 
-// ---------- Créditos (cuentas por pagar) ----------
+// ---------- Créditos con proveedores (cuentas por pagar) ----------
 
-export function getCredits() {
-  return read(KEYS.credits).sort((a, b) => new Date(a.dueDate || a.date) - new Date(b.dueDate || b.date))
+export async function getCredits() {
+  const { data, error } = await supabase
+    .from('provider_credits')
+    .select('*')
+    .order('due_date', { ascending: true, nullsFirst: false })
+  mustNotError(error, 'getCredits')
+  return data.map(mapCredit)
 }
 
-export function addCredit({ providerId, amount, description, date, dueDate }) {
-  const list = read(KEYS.credits)
-  const item = {
-    id: uid('cred'),
-    providerId,
-    amount: Number(amount),
-    description: description || '',
-    date: date || new Date().toISOString(),
-    dueDate: dueDate || null,
-    status: 'pendiente',
-  }
-  list.push(item)
-  write(KEYS.credits, list)
-  return item
+export async function addCredit({ providerId, amount, description, date, dueDate }) {
+  const { data, error } = await supabase
+    .from('provider_credits')
+    .insert({
+      provider_id: providerId,
+      amount: Number(amount),
+      description: description || '',
+      date: date || new Date().toISOString(),
+      due_date: dueDate || null,
+      status: 'pendiente',
+    })
+    .select()
+    .single()
+  mustNotError(error, 'addCredit')
+  return mapCredit(data)
 }
 
-export function markCreditPaid(id) {
-  const list = read(KEYS.credits)
-  const credit = list.find((c) => c.id === id)
-  if (!credit) return null
-  credit.status = 'pagado'
-  write(KEYS.credits, list)
-  // Registrar el pago como egreso real
-  payProvider({
-    providerId: credit.providerId,
+export async function markCreditPaid(id) {
+  const { data: credit, error: fetchError } = await supabase
+    .from('provider_credits')
+    .select('*')
+    .eq('id', id)
+    .single()
+  mustNotError(fetchError, 'markCreditPaid (fetch)')
+
+  const { error: updateError } = await supabase
+    .from('provider_credits')
+    .update({ status: 'pagado' })
+    .eq('id', id)
+  mustNotError(updateError, 'markCreditPaid (update)')
+
+  // El pago del crédito SÍ es un egreso real de caja
+  await addTransaction({
+    type: 'egreso',
     amount: credit.amount,
+    category: 'Pago a proveedor',
     description: `Pago de crédito: ${credit.description}`,
     date: new Date().toISOString(),
+    providerId: credit.provider_id,
   })
-  return credit
+  return mapCredit(credit)
 }
 
-export function deleteCredit(id) {
-  const list = read(KEYS.credits).filter((c) => c.id !== id)
-  write(KEYS.credits, list)
+export async function deleteCredit(id) {
+  const { error } = await supabase.from('provider_credits').delete().eq('id', id)
+  mustNotError(error, 'deleteCredit')
 }
 
 // ---------- Clientes (a quienes LES fiamos — cuentas por cobrar) ----------
 
-export function getCustomers() {
-  return read(KEYS.customers).sort((a, b) => a.name.localeCompare(b.name))
+export async function getCustomers() {
+  const { data, error } = await supabase.from('customers').select('*').order('name', { ascending: true })
+  mustNotError(error, 'getCustomers')
+  return data.map(mapCustomer)
 }
 
-export function addCustomer({ name, phone, notes }) {
-  const list = read(KEYS.customers)
-  const item = {
-    id: uid('cust'),
-    name,
-    phone: phone || '',
-    notes: notes || '',
-    createdAt: new Date().toISOString(),
-  }
-  list.push(item)
-  write(KEYS.customers, list)
-  return item
+export async function addCustomer({ name, phone, notes }) {
+  const { data, error } = await supabase
+    .from('customers')
+    .insert({ name, phone: phone || '', notes: notes || '' })
+    .select()
+    .single()
+  mustNotError(error, 'addCustomer')
+  return mapCustomer(data)
 }
 
-export function deleteCustomer(id) {
-  const list = read(KEYS.customers).filter((c) => c.id !== id)
-  write(KEYS.customers, list)
+export async function deleteCustomer(id) {
+  const { error } = await supabase.from('customers').delete().eq('id', id)
+  mustNotError(error, 'deleteCustomer')
 }
 
-// ---------- Créditos a clientes (cuentas por cobrar) ----------
-// Representan dinero que un cliente TE debe (le fiaste una venta).
-// A diferencia de los créditos con proveedores, cuando se pagan generan
-// un INGRESO real (el cliente te está devolviendo efectivo).
+// ---------- Créditos a clientes (fiado / cuentas por cobrar) ----------
 
-export function getClientCredits() {
-  return read(KEYS.clientCredits).sort(
-    (a, b) => new Date(a.dueDate || a.date) - new Date(b.dueDate || b.date)
-  )
+export async function getClientCredits() {
+  const { data, error } = await supabase
+    .from('client_credits')
+    .select('*')
+    .order('due_date', { ascending: true, nullsFirst: false })
+  mustNotError(error, 'getClientCredits')
+  return data.map(mapClientCredit)
 }
 
-export function addClientCredit({ customerId, amount, description, date, dueDate }) {
-  const list = read(KEYS.clientCredits)
-  const item = {
-    id: uid('ccred'),
-    customerId,
-    amount: Number(amount),
-    description: description || '',
-    date: date || new Date().toISOString(),
-    dueDate: dueDate || null,
-    status: 'pendiente',
-  }
-  list.push(item)
-  write(KEYS.clientCredits, list)
-  return item
+export async function addClientCredit({ customerId, amount, description, date, dueDate }) {
+  const { data, error } = await supabase
+    .from('client_credits')
+    .insert({
+      customer_id: customerId,
+      amount: Number(amount),
+      description: description || '',
+      date: date || new Date().toISOString(),
+      due_date: dueDate || null,
+      status: 'pendiente',
+    })
+    .select()
+    .single()
+  mustNotError(error, 'addClientCredit')
+  return mapClientCredit(data)
 }
 
-export function markClientCreditPaid(id) {
-  const list = read(KEYS.clientCredits)
-  const credit = list.find((c) => c.id === id)
-  if (!credit) return null
-  credit.status = 'pagado'
-  write(KEYS.clientCredits, list)
-  // El cliente paga lo que debía: esto SÍ entra como ingreso real de caja
-  addTransaction({
+export async function markClientCreditPaid(id) {
+  const { data: credit, error: fetchError } = await supabase
+    .from('client_credits')
+    .select('*')
+    .eq('id', id)
+    .single()
+  mustNotError(fetchError, 'markClientCreditPaid (fetch)')
+
+  const { error: updateError } = await supabase
+    .from('client_credits')
+    .update({ status: 'pagado' })
+    .eq('id', id)
+  mustNotError(updateError, 'markClientCreditPaid (update)')
+
+  // El cliente pagando lo que debía SÍ es un ingreso real de caja
+  await addTransaction({
     type: 'ingreso',
     amount: credit.amount,
     category: 'Cobro de crédito',
     description: `Cobro de crédito: ${credit.description}`,
     date: new Date().toISOString(),
   })
-  return credit
+  return mapClientCredit(credit)
 }
 
-export function deleteClientCredit(id) {
-  const list = read(KEYS.clientCredits).filter((c) => c.id !== id)
-  write(KEYS.clientCredits, list)
+export async function deleteClientCredit(id) {
+  const { error } = await supabase.from('client_credits').delete().eq('id', id)
+  mustNotError(error, 'deleteClientCredit')
 }
 
 // ---------- Cálculos para el Dashboard ----------
@@ -237,8 +281,8 @@ export function deleteClientCredit(id) {
 // El "saldo en efectivo" es el total de ingresos que han entrado a caja.
 // Los gastos se registran y se muestran por separado, para control y reportes,
 // pero NUNCA se restan del saldo en efectivo — así es como el cliente maneja su caja.
-export function getSummary() {
-  const txs = read(KEYS.transactions)
+export async function getSummary() {
+  const txs = await getTransactions()
   const ingresos = txs.filter((t) => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0)
   const gastos = txs.filter((t) => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0)
   return {
@@ -249,9 +293,9 @@ export function getSummary() {
 }
 
 // Resumen del día actual: ingresos, gastos y el TOTAL (suma de ambos),
-// útil para cuadre de caja diario — no confundir con "saldo" (que es la resta acumulada).
-export function getTodaySummary() {
-  const txs = read(KEYS.transactions)
+// útil para cuadre de caja diario — no confundir con "saldo" (que es solo ingresos).
+export async function getTodaySummary() {
+  const txs = await getTransactions()
   const todayKey = new Date().toISOString().slice(0, 10)
   const todayTxs = txs.filter((t) => t.date.slice(0, 10) === todayKey)
 
@@ -266,8 +310,8 @@ export function getTodaySummary() {
 }
 
 // Agrupa movimientos de los últimos N días para la gráfica (vista "Día")
-export function getDailySeries(days = 7) {
-  const txs = read(KEYS.transactions)
+export async function getDailySeries(days = 7) {
+  const txs = await getTransactions()
   const today = new Date()
   const series = []
 
@@ -287,8 +331,8 @@ export function getDailySeries(days = 7) {
 }
 
 // Agrupa movimientos por mes, últimos N meses (vista "Mes")
-export function getMonthlySeries(monthsCount = 6) {
-  const txs = read(KEYS.transactions)
+export async function getMonthlySeries(monthsCount = 6) {
+  const txs = await getTransactions()
   const today = new Date()
   const series = []
 
@@ -311,18 +355,16 @@ export function getMonthlySeries(monthsCount = 6) {
 }
 
 // Agrupa movimientos por año, últimos N años (vista "Año")
-export function getYearlySeries(yearsCount = 5) {
-  const txs = read(KEYS.transactions)
+export async function getYearlySeries(yearsCount = 5) {
+  const txs = await getTransactions()
   const currentYear = new Date().getFullYear()
   const series = []
 
   for (let i = yearsCount - 1; i >= 0; i--) {
     const year = currentYear - i
-
     const yearTxs = txs.filter((t) => new Date(t.date).getFullYear() === year)
     const ingresos = yearTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
     const gastos = yearTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
-
     series.push({ label: String(year), ingresos, gastos })
   }
   return series
@@ -330,59 +372,122 @@ export function getYearlySeries(yearsCount = 5) {
 
 // ---------- Configuración de empresa (branding) ----------
 
-export function getSettings() {
-  const raw = localStorage.getItem(KEYS.settings)
-  return raw
-    ? JSON.parse(raw)
-    : { companyName: 'Mi Empresa', primaryColor: '#E8B34A', secondaryColor: '#1FB6A8' }
-}
-
-export function saveSettings(settings) {
-  write(KEYS.settings, settings)
-}
-
-// ---------- Datos de ejemplo (solo si la app está vacía) ----------
-
-export function seedIfEmpty() {
-  if (read(KEYS.transactions).length === 0 && read(KEYS.providers).length === 0) {
-    const prov1 = addProvider({ name: 'Distribuidora La 70', nit: '900123456-1', phone: '3001234567', category: 'Insumos' })
-    const prov2 = addProvider({ name: 'Papelería Central', nit: '900654321-2', phone: '3109876543', category: 'Oficina' })
-
-    addTransaction({ type: 'ingreso', amount: 1250000, category: 'Ventas', description: 'Venta mostrador', date: new Date().toISOString() })
-    addTransaction({ type: 'ingreso', amount: 480000, category: 'Ventas', description: 'Venta a domicilio', date: new Date(Date.now() - 86400000).toISOString() })
-    addTransaction({ type: 'egreso', amount: 320000, category: 'Pago a proveedor', description: 'Compra insumos', date: new Date(Date.now() - 86400000).toISOString(), providerId: prov1.id })
-    addTransaction({ type: 'egreso', amount: 95000, category: 'Servicios', description: 'Internet y luz', date: new Date(Date.now() - 2 * 86400000).toISOString() })
-
-    addCredit({ providerId: prov2.id, amount: 210000, description: 'Resmas de papel y tóner', date: new Date().toISOString(), dueDate: new Date(Date.now() + 5 * 86400000).toISOString() })
+export async function getSettings() {
+  const { data, error } = await supabase.from('settings').select('*').eq('id', true).single()
+  mustNotError(error, 'getSettings')
+  return {
+    companyName: data.company_name,
+    primaryColor: data.primary_color,
+    secondaryColor: data.secondary_color,
   }
 }
 
-// ---------- Backup / Exportación ----------
+export async function saveSettings({ companyName, primaryColor, secondaryColor }) {
+  const { error } = await supabase
+    .from('settings')
+    .update({ company_name: companyName, primary_color: primaryColor, secondary_color: secondaryColor })
+    .eq('id', true)
+  mustNotError(error, 'saveSettings')
+}
 
-export function getFullBackup() {
+// ---------- Backup / Exportación / Importación ----------
+
+export async function getFullBackup() {
+  const [transactions, providers, credits, customers, clientCredits, settings] = await Promise.all([
+    getTransactions(),
+    getProviders(),
+    getCredits(),
+    getCustomers(),
+    getClientCredits(),
+    getSettings(),
+  ])
   return {
     exportedAt: new Date().toISOString(),
-    transactions: read(KEYS.transactions),
-    providers: read(KEYS.providers),
-    credits: read(KEYS.credits),
-    customers: read(KEYS.customers),
-    clientCredits: read(KEYS.clientCredits),
-    settings: getSettings(),
+    transactions,
+    providers,
+    credits,
+    customers,
+    clientCredits,
+    settings,
   }
 }
 
-// Restaura TODOS los datos desde un backup JSON exportado previamente.
-// Esto REEMPLAZA por completo lo que haya guardado actualmente en localStorage.
-export function restoreFromBackup(data) {
+// Restaura TODOS los datos desde un backup JSON. Esto REEMPLAZA por completo
+// lo que haya en la base de datos actual. Los IDs se regeneran (Supabase asigna
+// IDs nuevos), así que también sirve para restaurar backups viejos que venían
+// de la versión con localStorage.
+export async function restoreFromBackup(data) {
   if (!data || typeof data !== 'object') {
     throw new Error('El archivo no tiene un formato de backup válido.')
   }
-  if (Array.isArray(data.transactions)) write(KEYS.transactions, data.transactions)
-  if (Array.isArray(data.providers)) write(KEYS.providers, data.providers)
-  if (Array.isArray(data.credits)) write(KEYS.credits, data.credits)
-  if (Array.isArray(data.customers)) write(KEYS.customers, data.customers)
-  if (Array.isArray(data.clientCredits)) write(KEYS.clientCredits, data.clientCredits)
-  if (data.settings && typeof data.settings === 'object') write(KEYS.settings, data.settings)
+
+  const ALL_ZEROS = '00000000-0000-0000-0000-000000000000'
+  await supabase.from('transactions').delete().neq('id', ALL_ZEROS)
+  await supabase.from('provider_credits').delete().neq('id', ALL_ZEROS)
+  await supabase.from('client_credits').delete().neq('id', ALL_ZEROS)
+  await supabase.from('providers').delete().neq('id', ALL_ZEROS)
+  await supabase.from('customers').delete().neq('id', ALL_ZEROS)
+
+  const providerIdMap = {}
+  const customerIdMap = {}
+
+  if (Array.isArray(data.providers)) {
+    for (const p of data.providers) {
+      const created = await addProvider({ name: p.name, nit: p.nit, phone: p.phone, category: p.category })
+      providerIdMap[p.id] = created.id
+    }
+  }
+  if (Array.isArray(data.customers)) {
+    for (const c of data.customers) {
+      const created = await addCustomer({ name: c.name, phone: c.phone, notes: c.notes })
+      customerIdMap[c.id] = created.id
+    }
+  }
+  if (Array.isArray(data.transactions)) {
+    for (const t of data.transactions) {
+      await addTransaction({
+        type: t.type,
+        amount: t.amount,
+        category: t.category,
+        description: t.description,
+        date: t.date,
+        providerId: t.providerId ? providerIdMap[t.providerId] || null : null,
+      })
+    }
+  }
+  if (Array.isArray(data.credits)) {
+    for (const c of data.credits) {
+      if (!providerIdMap[c.providerId]) continue
+      const created = await addCredit({
+        providerId: providerIdMap[c.providerId],
+        amount: c.amount,
+        description: c.description,
+        date: c.date,
+        dueDate: c.dueDate,
+      })
+      if (c.status === 'pagado') {
+        await supabase.from('provider_credits').update({ status: 'pagado' }).eq('id', created.id)
+      }
+    }
+  }
+  if (Array.isArray(data.clientCredits)) {
+    for (const c of data.clientCredits) {
+      if (!customerIdMap[c.customerId]) continue
+      const created = await addClientCredit({
+        customerId: customerIdMap[c.customerId],
+        amount: c.amount,
+        description: c.description,
+        date: c.date,
+        dueDate: c.dueDate,
+      })
+      if (c.status === 'pagado') {
+        await supabase.from('client_credits').update({ status: 'pagado' }).eq('id', created.id)
+      }
+    }
+  }
+  if (data.settings) {
+    await saveSettings(data.settings)
+  }
 }
 
 // Alias por compatibilidad, en caso de que algún archivo importe con este otro nombre

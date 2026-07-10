@@ -17,6 +17,8 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
   const [providerId, setProviderId] = useState('')
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10)) // YYYY-MM-DD, hoy por defecto
   const [pendingSave, setPendingSave] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   function handleTypeChange(next) {
     setType(next)
@@ -32,15 +34,24 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
     return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString()
   }
 
-  function commitSave() {
-    const isoDate = dateToISO(date)
-    if (category === 'Pago a proveedor' && providerId) {
-      payProvider({ providerId, amount, description, date: isoDate })
-    } else {
-      addTransaction({ type, amount, category, description, providerId: providerId || null, date: isoDate })
+  async function commitSave() {
+    setSaving(true)
+    setError('')
+    try {
+      const isoDate = dateToISO(date)
+      if (category === 'Pago a proveedor' && providerId) {
+        await payProvider({ providerId, amount, description, date: isoDate })
+      } else {
+        await addTransaction({ type, amount, category, description, providerId: providerId || null, date: isoDate })
+      }
+      setPendingSave(false)
+      onSaved()
+    } catch (err) {
+      setError(err.message || 'No se pudo guardar el movimiento.')
+      setPendingSave(false)
+    } finally {
+      setSaving(false)
     }
-    setPendingSave(false)
-    onSaved()
   }
 
   function handleSubmit(e) {
@@ -159,11 +170,14 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
             />
           </div>
 
+          {error && <p className="text-xs text-egreso">{error}</p>}
+
           <button
             type="submit"
-            className="w-full rounded-xl bg-brand-gold py-3.5 text-center font-semibold text-base-950 active:scale-[0.98]"
+            disabled={saving}
+            className="w-full rounded-xl bg-brand-gold py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
           >
-            Guardar movimiento
+            {saving ? 'Guardando...' : 'Guardar movimiento'}
           </button>
         </form>
       </div>
@@ -172,7 +186,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
         <ConfirmDialog
           title="Confirmar gasto"
           message={`Vas a registrar un gasto de ${formatCOP(Number(amount))}.\n\nEste monto se guarda por separado, en el control de gastos. NO afecta tu saldo en efectivo. ¿Confirmas?`}
-          confirmLabel="Sí, registrar"
+          confirmLabel={saving ? 'Guardando...' : 'Sí, registrar'}
           cancelLabel="Cancelar"
           tone="egreso"
           onConfirm={commitSave}
@@ -181,4 +195,4 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
       )}
     </div>
   )
-      }
+}

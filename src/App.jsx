@@ -10,10 +10,12 @@ import { getSettings } from './lib/storage'
 export default function App() {
   const [tab, setTab] = useState('dashboard')
   const [refreshKey, setRefreshKey] = useState(0)
-  const [settings, setSettings] = useState(getSettings())
+  const [settings, setSettings] = useState({ companyName: 'Mi Empresa' })
 
   useEffect(() => {
-    setSettings(getSettings())
+    getSettings()
+      .then(setSettings)
+      .catch((err) => console.error('Error cargando settings:', err))
   }, [])
 
   const handleDataChanged = useCallback(() => {

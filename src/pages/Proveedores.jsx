@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, Phone, CreditCard, CheckCircle2, Trash2 } from 'lucide-react'
 import { formatCOP } from '../components/StatCard'
 import ProviderForm from '../components/ProviderForm'
@@ -9,10 +9,27 @@ import { getProviders, getCredits, markCreditPaid, deleteProvider } from '../lib
 export default function Proveedores({ refreshKey, onDataChanged }) {
   const [showProviderForm, setShowProviderForm] = useState(false)
   const [payingProvider, setPayingProvider] = useState(null)
-  const [pendingCredit, setPendingCredit] = useState(null) // { id, amount, providerName }
+  const [pendingCredit, setPendingCredit] = useState(null)
 
-  const providers = useMemo(() => getProviders(), [refreshKey])
-  const credits = useMemo(() => getCredits(), [refreshKey])
+  const [loading, setLoading] = useState(true)
+  const [providers, setProviders] = useState([])
+  const [credits, setCredits] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    Promise.all([getProviders(), getCredits()])
+      .then(([provs, creds]) => {
+        if (cancelled) return
+        setProviders(provs)
+        setCredits(creds)
+      })
+      .catch((err) => console.error('Error cargando proveedores:', err))
+      .finally(() => !cancelled && setLoading(false))
+    return () => {
+      cancelled = true
+    }
+  }, [refreshKey])
 
   const creditsByProvider = useMemo(() => {
     const map = {}
@@ -25,19 +42,19 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
     return map
   }, [credits])
 
-  function confirmPayCredit() {
+  async function confirmPayCredit() {
     if (!pendingCredit) return
-    markCreditPaid(pendingCredit.id)
+    await markCreditPaid(pendingCredit.id)
     setPendingCredit(null)
     onDataChanged()
   }
 
-  function handleDeleteProvider(id) {
+  async function handleDeleteProvider(id) {
     if (creditsByProvider[id]?.length) {
       alert('Este proveedor tiene créditos pendientes. Salda o elimina los créditos primero.')
       return
     }
-    deleteProvider(id)
+    await deleteProvider(id)
     onDataChanged()
   }
 
@@ -48,8 +65,10 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
         <p className="text-sm text-slate-500">{providers.length} registrados</p>
       </header>
 
+      {loading && <p className="px-5 text-sm text-slate-500 md:px-0">Cargando...</p>}
+
       <div className="mx-5 grid grid-cols-1 gap-3 md:mx-0 md:grid-cols-2">
-        {providers.length === 0 && (
+        {!loading && providers.length === 0 && (
           <div className="rounded-2xl border border-dashed border-base-600 p-6 text-center text-sm text-slate-500 md:col-span-2">
             Aún no tienes proveedores. Agrega el primero con el botón +.
           </div>

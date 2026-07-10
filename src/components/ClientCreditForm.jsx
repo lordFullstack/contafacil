@@ -7,17 +7,27 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!customerId || !amount || Number(amount) <= 0) return
-    addClientCredit({
-      customerId,
-      amount,
-      description,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-    })
-    onSaved()
+    setSaving(true)
+    setError('')
+    try {
+      await addClientCredit({
+        customerId,
+        amount,
+        description,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      })
+      onSaved()
+    } catch (err) {
+      setError(err.message || 'No se pudo guardar el crédito.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -83,11 +93,14 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
             />
           </div>
 
+          {error && <p className="text-xs text-egreso">{error}</p>}
+
           <button
             type="submit"
-            className="w-full rounded-xl bg-brand-tealed py-3.5 text-center font-semibold text-base-950 active:scale-[0.98]"
+            disabled={saving}
+            className="w-full rounded-xl bg-brand-tealed py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
           >
-            Guardar crédito
+            {saving ? 'Guardando...' : 'Guardar crédito'}
           </button>
         </form>
       </div>

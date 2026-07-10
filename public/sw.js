@@ -13,6 +13,10 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+// Estrategia simple: red primero, y si falla (sin conexión), cae al cache.
+// Esto es suficiente para una app que ya guarda todo en localStorage —
+// el objetivo del service worker aquí es solo habilitar la instalación como PWA
+// y que la app cargue aunque el celular pierda señal momentáneamente.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
 

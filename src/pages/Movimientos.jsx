@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, Trash2, ArrowDownCircle, ArrowUpCircle, ChevronDown } from 'lucide-react'
 import { formatCOP } from '../components/StatCard'
 import TransactionForm from '../components/TransactionForm'
@@ -28,18 +28,35 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState('todos')
   const [pendingDelete, setPendingDelete] = useState(null)
-  const [expandedDays, setExpandedDays] = useState(null) // null hasta inicializar con el día más reciente
+  const [expandedDays, setExpandedDays] = useState(null)
 
-  const providers = useMemo(() => getProviders(), [refreshKey])
+  const [loading, setLoading] = useState(true)
+  const [allTransactions, setAllTransactions] = useState([])
+  const [providers, setProviders] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    Promise.all([getTransactions(), getProviders()])
+      .then(([txs, provs]) => {
+        if (cancelled) return
+        setAllTransactions(txs)
+        setProviders(provs)
+      })
+      .catch((err) => console.error('Error cargando movimientos:', err))
+      .finally(() => !cancelled && setLoading(false))
+    return () => {
+      cancelled = true
+    }
+  }, [refreshKey])
+
   const providerMap = useMemo(() => Object.fromEntries(providers.map((p) => [p.id, p.name])), [providers])
 
   const transactions = useMemo(() => {
-    const all = getTransactions()
-    if (filter === 'todos') return all
-    return all.filter((t) => t.type === filter)
-  }, [refreshKey, filter])
+    if (filter === 'todos') return allTransactions
+    return allTransactions.filter((t) => t.type === filter)
+  }, [allTransactions, filter])
 
-  // Agrupa por día (YYYY-MM-DD), manteniendo el orden más reciente primero
   const groups = useMemo(() => {
     const map = new Map()
     for (const t of transactions) {
@@ -54,8 +71,6 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
     })
   }, [transactions])
 
-  // Por defecto, solo el día más reciente queda expandido — así no hay que hacer scroll
-  // por todo el historial para ver los movimientos de hoy.
   const effectiveExpanded = useMemo(() => {
     if (expandedDays !== null) return expandedDays
     return groups.length > 0 ? new Set([groups[0].key]) : new Set()
@@ -68,9 +83,9 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
     setExpandedDays(next)
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!pendingDelete) return
-    deleteTransaction(pendingDelete.id)
+    await deleteTransaction(pendingDelete.id)
     setPendingDelete(null)
     onDataChanged()
   }
@@ -81,6 +96,8 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
         <h1 className="font-display text-2xl font-bold text-slate-50">Movimientos</h1>
         <p className="text-sm text-slate-500">Historial agrupado por día</p>
       </header>
+
+      {loading && <p className="px-5 text-sm text-slate-500 md:px-0">Cargando...</p>}
 
       {/* Filtros */}
       <div className="flex gap-2 px-5 md:px-0">
@@ -101,7 +118,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
 
       {/* Grupos por día */}
       <div className="mx-5 mt-4 space-y-3 md:mx-0">
-        {groups.length === 0 && (
+        {!loading && groups.length === 0 && (
           <div className="rounded-2xl border border-base-700 bg-base-900 p-4 text-sm text-slate-500 shadow-card">
             No hay movimientos para este filtro.
           </div>
@@ -211,4 +228,4 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
       )}
     </div>
   )
-              }
+}
