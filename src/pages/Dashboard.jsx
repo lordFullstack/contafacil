@@ -22,6 +22,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   const [pendingImport, setPendingImport] = useState(null)
   const [importError, setImportError] = useState('')
   const [period, setPeriod] = useState('dia') // 'dia' | 'mes' | 'anio'
+  const [dayRange, setDayRange] = useState(7) // 7 | 15 | 30, solo aplica cuando period === 'dia'
   const fileInputRef = useRef(null)
 
   const [loading, setLoading] = useState(true)
@@ -31,14 +32,19 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   const [recent, setRecent] = useState([])
   const [providers, setProviders] = useState([])
 
-  const chartTitle = { dia: 'Últimos 7 días', mes: 'Últimos 6 meses', anio: 'Últimos 5 años' }[period]
+  const chartTitle =
+    period === 'mes'
+      ? 'Últimos 6 meses'
+      : period === 'anio'
+      ? 'Últimos 5 años'
+      : `Últimos ${dayRange} días`
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
 
     const seriesPromise =
-      period === 'mes' ? getMonthlySeries(6) : period === 'anio' ? getYearlySeries(5) : getDailySeries(7)
+      period === 'mes' ? getMonthlySeries(6) : period === 'anio' ? getYearlySeries(5) : getDailySeries(dayRange)
 
     Promise.all([getSummary(), getTodaySummary(), seriesPromise, getTransactions(), getProviders()])
       .then(([s, t, ser, txs, provs]) => {
@@ -55,7 +61,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
     return () => {
       cancelled = true
     }
-  }, [refreshKey, period])
+  }, [refreshKey, period, dayRange])
 
   async function handleExportCSV() {
     const [txs, provs] = await Promise.all([getTransactions(), getProviders()])
@@ -137,24 +143,41 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       {/* Gráfica + movimientos recientes: lado a lado en escritorio */}
       <div className="md:grid md:grid-cols-5 md:gap-4 md:px-0">
       <div className="mx-5 mt-4 rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card md:col-span-3 md:mx-0">
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{chartTitle}</p>
-          <div className="flex gap-1 rounded-lg bg-base-800 p-0.5">
-            {[
-              { id: 'dia', label: 'Día' },
-              { id: 'mes', label: 'Mes' },
-              { id: 'anio', label: 'Año' },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setPeriod(opt.id)}
-                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
-                  period === opt.id ? 'bg-brand-gold text-base-950' : 'text-slate-400'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            {period === 'dia' && (
+              <div className="flex gap-1 rounded-lg bg-base-800 p-0.5">
+                {[7, 15, 30].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setDayRange(n)}
+                    className={`rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
+                      dayRange === n ? 'bg-brand-tealed text-base-950' : 'text-slate-400'
+                    }`}
+                  >
+                    {n}d
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-1 rounded-lg bg-base-800 p-0.5">
+              {[
+                { id: 'dia', label: 'Día' },
+                { id: 'mes', label: 'Mes' },
+                { id: 'anio', label: 'Año' },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setPeriod(opt.id)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    period === opt.id ? 'bg-brand-gold text-base-950' : 'text-slate-400'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={160}>
@@ -170,7 +193,13 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#1D2733" vertical={false} />
-            <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <XAxis
+              dataKey="label"
+              tick={{ fill: '#64748b', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              interval={period === 'dia' && dayRange > 7 ? Math.ceil(dayRange / 6) - 1 : 0}
+            />
             <Tooltip
               contentStyle={{ background: '#0D1218', border: '1px solid #1D2733', borderRadius: 12 }}
               labelStyle={{ color: '#94a3b8' }}
@@ -283,4 +312,4 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       )}
     </div>
   )
-}
+                                                                 }
