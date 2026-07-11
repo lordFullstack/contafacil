@@ -24,6 +24,7 @@ function mapTransaction(row) {
     description: row.description || '',
     date: row.date,
     providerId: row.provider_id,
+    affectsBalance: row.affects_balance,
   }
 }
 
@@ -80,7 +81,15 @@ export async function getTransactions() {
   return data.map(mapTransaction)
 }
 
-export async function addTransaction({ type, amount, category, description, date, providerId = null }) {
+export async function addTransaction({
+  type,
+  amount,
+  category,
+  description,
+  date,
+  providerId = null,
+  affectsBalance = false,
+}) {
   const { data, error } = await supabase
     .from('transactions')
     .insert({
@@ -90,6 +99,9 @@ export async function addTransaction({ type, amount, category, description, date
       description: description || '',
       date: date || new Date().toISOString(),
       provider_id: providerId,
+      // Un ingreso SIEMPRE afecta el saldo (entra dinero real a caja).
+      // Un egreso solo lo afecta si el usuario marcó el check explícitamente.
+      affects_balance: type === 'ingreso' ? true : affectsBalance,
     })
     .select()
     .single()
@@ -126,7 +138,7 @@ export async function deleteProvider(id) {
 }
 
 // Pago a proveedor = crea una transacción tipo 'egreso' asociada a providerId
-export async function payProvider({ providerId, amount, description, date }) {
+export async function payProvider({ providerId, amount, description, date, affectsBalance = false }) {
   return addTransaction({
     type: 'egreso',
     amount,
@@ -134,8 +146,10 @@ export async function payProvider({ providerId, amount, description, date }) {
     description,
     date,
     providerId,
+    affectsBalance,
   })
-    }
+}
+
 // ---------- Créditos con proveedores (cuentas por pagar) ----------
 
 export async function getCredits() {
@@ -164,7 +178,7 @@ export async function addCredit({ providerId, amount, description, date, dueDate
   return mapCredit(data)
 }
 
-export async function markCreditPaid(id) {
+export async function markCreditPaid(id, affectsBalance = false) {
   const { data: credit, error: fetchError } = await supabase
     .from('provider_credits')
     .select('*')
@@ -178,7 +192,8 @@ export async function markCreditPaid(id) {
     .eq('id', id)
   mustNotError(updateError, 'markCreditPaid (update)')
 
-  // El pago del crédito SÍ es un egreso real de caja
+  // El pago del crédito SÍ es un egreso real; si además marcaste el check,
+  // también descuenta del saldo en efectivo.
   await addTransaction({
     type: 'egreso',
     amount: credit.amount,
@@ -186,6 +201,7 @@ export async function markCreditPaid(id) {
     description: `Pago de crédito: ${credit.description}`,
     date: new Date().toISOString(),
     providerId: credit.provider_id,
+    affectsBalance,
   })
   return mapCredit(credit)
 }
@@ -278,17 +294,20 @@ export async function deleteClientCredit(id) {
 
 // ---------- Cálculos para el Dashboard ----------
 
-// El "saldo en efectivo" es el total de ingresos que han entrado a caja.
-// Los gastos se registran y se muestran por separado, para control y reportes,
-// pero NUNCA se restan del saldo en efectivo — así es como el cliente maneja su caja.
+// El "saldo en efectivo" es el total de ingresos, MENOS los gastos que el usuario
+// marcó explícitamente con el check "Descontar del saldo en efectivo". Los demás
+// gastos se registran igual (para el control de gastos) pero no tocan el saldo.
 export async function getSummary() {
   const txs = await getTransactions()
   const ingresos = txs.filter((t) => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0)
   const gastos = txs.filter((t) => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0)
+  const gastosQueDescuentan = txs
+    .filter((t) => t.type === 'egreso' && t.affectsBalance)
+    .reduce((sum, t) => sum + t.amount, 0)
   return {
     ingresos,
     gastos,
-    saldo: ingresos,
+    saldo: ingresos - gastosQueDescuentan,
   }
 }
 
@@ -492,3 +511,4 @@ export async function restoreFromBackup(data) {
 
 // Alias por compatibilidad, en caso de que algún archivo importe con este otro nombre
 export const importFullBackup = restoreFromBackup
+      
