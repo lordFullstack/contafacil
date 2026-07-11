@@ -1,199 +1,232 @@
-import { useState } from 'react'
-import { X } from 'lucide-react'
-import { addTransaction, payProvider } from '../lib/storage'
-import { todayKey } from '../lib/dateUtils'
-import ConfirmDialog from './ConfirmDialog'
-import { formatCOP } from './StatCard'
+import { useEffect, useMemo, useState } from 'react'
+import { Plus, Trash2, ArrowDownCircle, ArrowUpCircle, ChevronDown } from 'lucide-react'
+import { formatCOP } from '../components/StatCard'
+import TransactionForm from '../components/TransactionForm'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { getTransactions, getProviders, deleteTransaction } from '../lib/storage'
+import { localDateKey, todayKey } from '../lib/dateUtils'
 
-const CATEGORIES = {
-  ingreso: ['Ventas', 'Servicios', 'Otro ingreso'],
-  egreso: ['Pago a proveedor', 'Servicios', 'Arriendo', 'Nómina', 'Otro gasto'],
+const FILTERS = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'ingreso', label: 'Ingresos' },
+  { id: 'egreso', label: 'Egresos' },
+]
+
+function dayLabel(dateKey) {
+  const today = todayKey()
+  const yesterday = localDateKey(new Date(Date.now() - 86400000))
+  if (dateKey === today) return 'Hoy'
+  if (dateKey === yesterday) return 'Ayer'
+  const [y, m, d] = dateKey.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('es-CO', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'short',
+  })
 }
 
-export default function TransactionForm({ providers, onClose, onSaved, defaultType = 'ingreso' }) {
-  const [type, setType] = useState(defaultType)
-  const [amount, setAmount] = useState('')
-  const [category, setCategory] = useState(CATEGORIES[defaultType][0])
-  const [description, setDescription] = useState('')
-  const [providerId, setProviderId] = useState('')
-  const [date, setDate] = useState(() => todayKey()) // YYYY-MM-DD en hora LOCAL, hoy por defecto
-  const [pendingSave, setPendingSave] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
+export default function Movimientos({ refreshKey, onDataChanged }) {
+  const [showForm, setShowForm] = useState(false)
+  const [filter, setFilter] = useState('todos')
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const [expandedDays, setExpandedDays] = useState(null)
 
-  function handleTypeChange(next) {
-    setType(next)
-    setCategory(CATEGORIES[next][0])
-    if (next === 'ingreso') setProviderId('')
-  }
+  const [loading, setLoading] = useState(true)
+  const [allTransactions, setAllTransactions] = useState([])
+  const [providers, setProviders] = useState([])
 
-  // Convierte "YYYY-MM-DD" (del input) a un ISO con la hora actual,
-  // para no perder el orden de "más reciente primero" entre movimientos del mismo día.
-  function dateToISO(dateStr) {
-    const now = new Date()
-    const [y, m, d] = dateStr.split('-').map(Number)
-    return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString()
-  }
-
-  async function commitSave() {
-    setSaving(true)
-    setError('')
-    try {
-      const isoDate = dateToISO(date)
-      if (category === 'Pago a proveedor' && providerId) {
-        await payProvider({ providerId, amount, description, date: isoDate })
-      } else {
-        await addTransaction({ type, amount, category, description, providerId: providerId || null, date: isoDate })
-      }
-      setPendingSave(false)
-      onSaved()
-    } catch (err) {
-      setError(err.message || 'No se pudo guardar el movimiento.')
-      setPendingSave(false)
-    } finally {
-      setSaving(false)
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    Promise.all([getTransactions(), getProviders()])
+      .then(([txs, provs]) => {
+        if (cancelled) return
+        setAllTransactions(txs)
+        setProviders(provs)
+      })
+      .catch((err) => console.error('Error cargando movimientos:', err))
+      .finally(() => !cancelled && setLoading(false))
+    return () => {
+      cancelled = true
     }
+  }, [refreshKey])
+
+  const providerMap = useMemo(() => Object.fromEntries(providers.map((p) => [p.id, p.name])), [providers])
+
+  const transactions = useMemo(() => {
+    if (filter === 'todos') return allTransactions
+    return allTransactions.filter((t) => t.type === filter)
+  }, [allTransactions, filter])
+
+  const groups = useMemo(() => {
+    const map = new Map()
+    for (const t of transactions) {
+      const key = localDateKey(t.date)
+      if (!map.has(key)) map.set(key, [])
+      map.get(key).push(t)
+    }
+    return Array.from(map.entries()).map(([key, items]) => {
+      const ingresos = items.filter((i) => i.type === 'ingreso').reduce((s, i) => s + i.amount, 0)
+      const gastos = items.filter((i) => i.type === 'egreso').reduce((s, i) => s + i.amount, 0)
+      return { key, items, ingresos, gastos }
+    })
+  }, [transactions])
+
+  const effectiveExpanded = useMemo(() => {
+    if (expandedDays !== null) return expandedDays
+    return groups.length > 0 ? new Set([groups[0].key]) : new Set()
+  }, [expandedDays, groups])
+
+  function toggleDay(key) {
+    const next = new Set(effectiveExpanded)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    setExpandedDays(next)
   }
 
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!amount || Number(amount) <= 0) return
-
-    // Cualquier egreso pide permiso explícito antes de descontar saldo real
-    if (type === 'egreso') {
-      setPendingSave(true)
-      return
-    }
-    commitSave()
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    await deleteTransaction(pendingDelete.id)
+    setPendingDelete(null)
+    onDataChanged()
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-t-3xl border-t border-base-700 bg-base-900 p-5 pb-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-slate-100">Nuevo movimiento</h2>
-          <button onClick={onClose} className="rounded-full p-1.5 text-slate-400 hover:bg-base-800">
-            <X size={20} />
-          </button>
-        </div>
+    <div className="pb-28 md:pb-10">
+      <header className="px-5 pt-6 pb-4 md:px-0">
+        <h1 className="font-display text-2xl font-bold text-slate-50">Movimientos</h1>
+        <p className="text-sm text-slate-500">Historial agrupado por día</p>
+      </header>
 
-        {/* Selector de tipo */}
-        <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-base-800 p-1">
+      {loading && <p className="px-5 text-sm text-slate-500 md:px-0">Cargando...</p>}
+
+      {/* Filtros */}
+      <div className="flex gap-2 px-5 md:px-0">
+        {FILTERS.map((f) => (
           <button
-            type="button"
-            onClick={() => handleTypeChange('ingreso')}
-            className={`rounded-lg py-2 text-sm font-semibold transition-colors ${
-              type === 'ingreso' ? 'bg-ingreso/15 text-ingreso' : 'text-slate-400'
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              filter === f.id
+                ? 'bg-brand-gold text-base-950'
+                : 'border border-base-600 text-slate-400'
             }`}
           >
-            Ingreso
+            {f.label}
           </button>
-          <button
-            type="button"
-            onClick={() => handleTypeChange('egreso')}
-            className={`rounded-lg py-2 text-sm font-semibold transition-colors ${
-              type === 'egreso' ? 'bg-egreso/15 text-egreso' : 'text-slate-400'
-            }`}
-          >
-            Egreso
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Fecha</label>
-            <input
-              type="date"
-              required
-              value={date}
-              max={todayKey()}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold [color-scheme:dark]"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Monto (COP)</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="0"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 font-mono text-lg text-slate-100 outline-none focus:border-brand-gold"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Categoría</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold"
-            >
-              {CATEGORIES[type].map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {category === 'Pago a proveedor' && (
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-400">Proveedor</label>
-              <select
-                value={providerId}
-                onChange={(e) => setProviderId(e.target.value)}
-                required
-                className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold"
-              >
-                <option value="">Selecciona un proveedor</option>
-                {providers.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Descripción (opcional)</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ej: Venta de mostrador"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold"
-            />
-          </div>
-
-          {error && <p className="text-xs text-egreso">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-xl bg-brand-gold py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
-          >
-            {saving ? 'Guardando...' : 'Guardar movimiento'}
-          </button>
-        </form>
+        ))}
       </div>
 
-      {pendingSave && (
+      {/* Grupos por día */}
+      <div className="mx-5 mt-4 space-y-3 md:mx-0">
+        {!loading && groups.length === 0 && (
+          <div className="rounded-2xl border border-base-700 bg-base-900 p-4 text-sm text-slate-500 shadow-card">
+            No hay movimientos para este filtro.
+          </div>
+        )}
+
+        {groups.map((group) => {
+          const isOpen = effectiveExpanded.has(group.key)
+          const net = group.ingresos - group.gastos
+
+          return (
+            <div key={group.key} className="overflow-hidden rounded-2xl border border-base-700 bg-base-900 shadow-card">
+              <button
+                onClick={() => toggleDay(group.key)}
+                className="flex w-full items-center justify-between px-4 py-3"
+              >
+                <div className="text-left">
+                  <p className="text-sm font-semibold capitalize text-slate-200">{dayLabel(group.key)}</p>
+                  <p className="text-xs text-slate-500">
+                    {group.items.length} {group.items.length === 1 ? 'movimiento' : 'movimientos'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`font-mono text-sm font-semibold ${net >= 0 ? 'text-ingreso' : 'text-egreso'}`}>
+                    {net >= 0 ? '+' : ''}
+                    {formatCOP(net)}
+                  </span>
+                  <ChevronDown
+                    size={18}
+                    className={`text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  />
+                </div>
+              </button>
+
+              {isOpen && (
+                <div className="divide-y divide-base-700 border-t border-base-700">
+                  {group.items.map((t) => (
+                    <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+                      {t.type === 'ingreso' ? (
+                        <ArrowUpCircle size={20} className="shrink-0 text-ingreso" />
+                      ) : (
+                        <ArrowDownCircle size={20} className="shrink-0 text-egreso" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-200">
+                          {t.description || t.category}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {t.category}
+                          {t.providerId && providerMap[t.providerId] ? ` · ${providerMap[t.providerId]}` : ''}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 font-mono text-sm font-semibold ${
+                          t.type === 'ingreso' ? 'text-ingreso' : 'text-egreso'
+                        }`}
+                      >
+                        {t.type === 'ingreso' ? '+' : '-'}
+                        {formatCOP(t.amount)}
+                      </span>
+                      <button
+                        onClick={() => setPendingDelete(t)}
+                        className="shrink-0 rounded-full p-1.5 text-slate-600 hover:bg-base-800 hover:text-egreso"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <button
+        onClick={() => setShowForm(true)}
+        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gold text-base-950 shadow-lg active:scale-95 md:bottom-8"
+      >
+        <Plus size={26} strokeWidth={2.5} />
+      </button>
+
+      {showForm && (
+        <TransactionForm
+          providers={providers}
+          onClose={() => setShowForm(false)}
+          onSaved={() => {
+            setShowForm(false)
+            onDataChanged()
+          }}
+        />
+      )}
+
+      {pendingDelete && (
         <ConfirmDialog
-          title="Confirmar gasto"
-          message={`Vas a registrar un gasto de ${formatCOP(Number(amount))}.\n\nEste monto se guarda por separado, en el control de gastos. NO afecta tu saldo en efectivo. ¿Confirmas?`}
-          confirmLabel={saving ? 'Guardando...' : 'Sí, registrar'}
+          title="Eliminar movimiento"
+          message={
+            pendingDelete.type === 'ingreso'
+              ? `Vas a eliminar un ingreso de ${formatCOP(pendingDelete.amount)}.\n\nEsto SÍ restará ese monto de tu saldo en efectivo (el saldo es la suma de los ingresos). ¿Confirmas?`
+              : `Vas a eliminar un gasto de ${formatCOP(pendingDelete.amount)}.\n\nEsto solo lo quita del control de gastos, NO afecta tu saldo en efectivo. ¿Confirmas?`
+          }
+          confirmLabel="Sí, eliminar"
           cancelLabel="Cancelar"
           tone="egreso"
-          onConfirm={commitSave}
-          onCancel={() => setPendingSave(false)}
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
         />
       )}
     </div>
   )
-}
+                  }
