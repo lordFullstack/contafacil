@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { addTransaction, payProvider } from '../lib/storage'
+import { todayKey } from '../lib/dateUtils'
 import ConfirmDialog from './ConfirmDialog'
 import { formatCOP } from './StatCard'
 
@@ -15,7 +16,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
   const [category, setCategory] = useState(CATEGORIES[defaultType][0])
   const [description, setDescription] = useState('')
   const [providerId, setProviderId] = useState('')
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10)) // YYYY-MM-DD, hoy por defecto
+  const [date, setDate] = useState(() => todayKey()) // YYYY-MM-DD en hora LOCAL, hoy por defecto
   const [pendingSave, setPendingSave] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -105,7 +106,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
               type="date"
               required
               value={date}
-              max={new Date().toISOString().slice(0, 10)}
+              max={todayKey()}
               onChange={(e) => setDate(e.target.value)}
               className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold [color-scheme:dark]"
             />
@@ -195,4 +196,4 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
       )}
     </div>
   )
-}
+            }
