@@ -13,6 +13,7 @@ export default function ConfirmDialog({
   tone = 'egreso', // 'egreso' | 'neutral'
   onConfirm,
   onCancel,
+  children, // contenido opcional extra, ej. un checkbox, entre el mensaje y los botones
 }) {
   const confirmColor =
     tone === 'egreso' ? 'bg-egreso text-white' : 'bg-brand-gold text-base-950'
@@ -32,6 +33,8 @@ export default function ConfirmDialog({
         </div>
 
         <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-slate-400">{message}</p>
+
+        {children && <div className="mb-5">{children}</div>}
 
         <div className="flex gap-3">
           <button
