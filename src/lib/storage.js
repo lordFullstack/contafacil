@@ -312,14 +312,19 @@ export async function getSummary() {
 }
 
 // Resumen del día actual: ingresos, gastos y el TOTAL (suma de ambos),
-// útil para cuadre de caja diario — no confundir con "saldo" (que es solo ingresos).
+// útil para cuadre de caja diario. Los gastos que el usuario marcó para
+// descontar del saldo en efectivo (el check) NO se cuentan aquí, porque esos
+// ya salen directamente del fondo de saldo — contarlos de nuevo en el Total
+// del día sería duplicarlos.
 export async function getTodaySummary() {
   const txs = await getTransactions()
   const key = todayKey()
   const todayTxs = txs.filter((t) => localDateKey(t.date) === key)
 
   const ingresosHoy = todayTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
-  const gastosHoy = todayTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
+  const gastosHoy = todayTxs
+    .filter((t) => t.type === 'egreso' && !t.affectsBalance)
+    .reduce((s, t) => s + t.amount, 0)
 
   return {
     ingresosHoy,
@@ -511,4 +516,4 @@ export async function restoreFromBackup(data) {
 
 // Alias por compatibilidad, en caso de que algún archivo importe con este otro nombre
 export const importFullBackup = restoreFromBackup
-      
+        
