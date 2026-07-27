@@ -6,7 +6,7 @@ export function formatCOP(value) {
   }).format(value || 0)
 }
 
-export default function StatCard({ label, value, icon: Icon, tone = 'neutral' }) {
+export default function StatCard({ label, value, icon: Icon, tone = 'neutral', hidden = false }) {
   const toneClasses = {
     ingreso: 'text-ingreso',
     egreso: 'text-egreso',
@@ -20,7 +20,7 @@ export default function StatCard({ label, value, icon: Icon, tone = 'neutral' })
         {Icon && <Icon size={16} className={toneClasses} strokeWidth={2} />}
       </div>
       <p className={`mt-2 font-mono text-xl font-semibold tabular-nums ${toneClasses}`}>
-        {formatCOP(value)}
+        {hidden ? '••••••' : formatCOP(value)}
       </p>
     </div>
   )
