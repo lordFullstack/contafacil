@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Upload, Plus, Calculator, Layers } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Upload, Plus, Calculator, Layers, Eye, EyeOff } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import StatCard, { formatCOP } from '../components/StatCard'
 import TransactionForm from '../components/TransactionForm'
@@ -23,7 +23,18 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   const [importError, setImportError] = useState('')
   const [period, setPeriod] = useState('dia') // 'dia' | 'mes' | 'anio'
   const [dayRange, setDayRange] = useState(7) // 7 | 15 | 30, solo aplica cuando period === 'dia'
+  const [valuesHidden, setValuesHidden] = useState(
+    () => localStorage.getItem('cf_dashboard_hidden') === '1'
+  )
   const fileInputRef = useRef(null)
+
+  function toggleValuesHidden() {
+    setValuesHidden((prev) => {
+      const next = !prev
+      localStorage.setItem('cf_dashboard_hidden', next ? '1' : '0')
+      return next
+    })
+  }
 
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState({ ingresos: 0, gastos: 0, saldo: 0 })
@@ -109,11 +120,21 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
   return (
     <div className="pb-28 md:pb-10">
       {/* Encabezado */}
-      <header className="px-5 pt-6 pb-4 md:px-0">
-        <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-          {settings.companyName}
-        </p>
-        <h1 className="font-display text-2xl font-bold text-slate-50">Dashboard</h1>
+      <header className="flex items-start justify-between px-5 pt-6 pb-4 md:px-0">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
+            {settings.companyName}
+          </p>
+          <h1 className="font-display text-2xl font-bold text-slate-50">Dashboard</h1>
+        </div>
+        <button
+          onClick={toggleValuesHidden}
+          className="mt-1 flex items-center gap-1.5 rounded-full border border-base-600 px-3 py-1.5 text-xs font-medium text-slate-400 active:scale-[0.98]"
+          title={valuesHidden ? 'Mostrar montos' : 'Ocultar montos'}
+        >
+          {valuesHidden ? <EyeOff size={14} /> : <Eye size={14} />}
+          {valuesHidden ? 'Ocultos' : 'Visibles'}
+        </button>
       </header>
 
       {loading && (
@@ -123,19 +144,26 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       {/* Tarjetas resumen */}
       <div className="grid grid-cols-2 gap-3 px-5 md:grid-cols-4 md:px-0">
         <div className="col-span-2 md:col-span-1">
-          <StatCard label="Saldo en efectivo" value={summary.saldo} icon={Wallet} tone="neutral" />
+          <StatCard label="Saldo en efectivo" value={summary.saldo} icon={Wallet} tone="neutral" hidden={valuesHidden} />
         </div>
         <div className="col-span-2 md:col-span-1">
-          <StatCard label="Total del día (ingresos + gastos)" value={today.totalHoy} icon={Calculator} tone="neutral" />
+          <StatCard
+            label="Total del día (ingresos + gastos)"
+            value={today.totalHoy}
+            icon={Calculator}
+            tone="neutral"
+            hidden={valuesHidden}
+          />
         </div>
-        <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" />
-        <StatCard label="Gastos" value={summary.gastos} icon={TrendingDown} tone="egreso" />
+        <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" hidden={valuesHidden} />
+        <StatCard label="Gastos" value={summary.gastos} icon={TrendingDown} tone="egreso" hidden={valuesHidden} />
         <div className="col-span-2 md:col-span-4">
           <StatCard
             label="Total global (ingresos + gastos, histórico)"
             value={summary.ingresos + summary.gastos}
             icon={Layers}
             tone="neutral"
+            hidden={valuesHidden}
           />
         </div>
       </div>
