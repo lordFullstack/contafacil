@@ -171,6 +171,32 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
         </div>
       </div>
 
+      {/* Cuadre de caja de hoy: la misma cuenta que harías a mano —
+          lo gastado + lo que quedó = lo que vendiste hoy */}
+      <div className="px-5 pt-3 md:px-0">
+        <div className="rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Cuadre de hoy</p>
+          <div className="mt-2 flex items-center justify-between text-sm">
+            <span className="text-slate-400">Gastado hoy</span>
+            <span className="font-mono font-semibold text-egreso">
+              {valuesHidden ? '••••••' : formatCOP(today.gastosHoy)}
+            </span>
+          </div>
+          <div className="mt-1.5 flex items-center justify-between text-sm">
+            <span className="text-slate-400">Te quedó</span>
+            <span className="font-mono font-semibold text-ingreso">
+              {valuesHidden ? '••••••' : formatCOP(today.netoHoy)}
+            </span>
+          </div>
+          <div className="mt-2 flex items-center justify-between border-t border-base-700 pt-2 text-sm">
+            <span className="font-medium text-slate-200">Total del día</span>
+            <span className="font-mono text-base font-bold text-brand-gold">
+              {valuesHidden ? '••••••' : formatCOP(today.ingresosHoy)}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Ingresos y egresos del histórico completo */}
       <div className="grid grid-cols-2 gap-3 px-5 pt-3 md:px-0">
         <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" hidden={valuesHidden} />
