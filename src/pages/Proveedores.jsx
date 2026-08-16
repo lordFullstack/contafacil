@@ -10,7 +10,6 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
   const [showProviderForm, setShowProviderForm] = useState(false)
   const [payingProvider, setPayingProvider] = useState(null)
   const [pendingCredit, setPendingCredit] = useState(null)
-  const [creditAffectsBalance, setCreditAffectsBalance] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [providers, setProviders] = useState([])
@@ -45,9 +44,8 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
 
   async function confirmPayCredit() {
     if (!pendingCredit) return
-    await markCreditPaid(pendingCredit.id, creditAffectsBalance)
+    await markCreditPaid(pendingCredit.id)
     setPendingCredit(null)
-    setCreditAffectsBalance(false)
     onDataChanged()
   }
 
@@ -180,31 +178,13 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
       {pendingCredit && (
         <ConfirmDialog
           title="Confirmar pago de crédito"
-          message={`Vas a registrar el pago de ${formatCOP(pendingCredit.amount)} a ${pendingCredit.providerName}.\n\n¿Confirmas?`}
+          message={`Vas a registrar el pago de ${formatCOP(pendingCredit.amount)} a ${pendingCredit.providerName}.\n\nEsto resta del saldo en caja. ¿Confirmas?`}
           confirmLabel="Sí, registrar"
           cancelLabel="Cancelar"
           tone="egreso"
           onConfirm={confirmPayCredit}
-          onCancel={() => {
-            setPendingCredit(null)
-            setCreditAffectsBalance(false)
-          }}
-        >
-          <label className="flex items-start gap-3 rounded-xl border border-base-600 bg-base-800 px-4 py-3">
-            <input
-              type="checkbox"
-              checked={creditAffectsBalance}
-              onChange={(e) => setCreditAffectsBalance(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-egreso"
-            />
-            <span className="text-sm text-slate-300">
-              Descontar este pago del <strong>saldo en efectivo</strong>
-              <span className="block text-xs text-slate-500">
-                Marca esto si el dinero salió de la misma caja (ej. pagos semanales fijos a este proveedor).
-              </span>
-            </span>
-          </label>
-        </ConfirmDialog>
+          onCancel={() => setPendingCredit(null)}
+        />
       )}
     </div>
   )

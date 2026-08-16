@@ -24,7 +24,6 @@ function mapTransaction(row) {
     description: row.description || '',
     date: row.date,
     providerId: row.provider_id,
-    affectsBalance: row.affects_balance,
   }
 }
 
@@ -81,27 +80,28 @@ export async function getTransactions() {
   return data.map(mapTransaction)
 }
 
-export async function addTransaction({
-  type,
-  amount,
-  category,
-  description,
-  date,
-  providerId = null,
-  affectsBalance = false,
-}) {
+export async function addTransaction({ type, amount, category, description, date, providerId = null }) {
+  const numAmount = Number(amount)
+  if (!Number.isFinite(numAmount) || numAmount <= 0) {
+    throw new Error('El monto debe ser un número mayor a 0.')
+  }
+
   const { data, error } = await supabase
     .from('transactions')
     .insert({
       type,
-      amount: Number(amount),
+      amount: numAmount,
       category: category || (type === 'ingreso' ? 'Ventas' : 'Otro'),
       description: description || '',
       date: date || new Date().toISOString(),
       provider_id: providerId,
-      // Un ingreso SIEMPRE afecta el saldo (entra dinero real a caja).
-      // Un egreso solo lo afecta si el usuario marcó el check explícitamente.
-      affects_balance: type === 'ingreso' ? true : affectsBalance,
+      // Regla única y sin excepciones: todo movimiento registrado aquí
+      // es dinero real que entró o salió de la caja. Si el dinero NO se
+      // movió todavía (ej. una venta o compra a crédito), eso no se
+      // registra como transacción — se registra como crédito, y solo se
+      // convierte en transacción cuando se paga o se cobra (ver payCredit /
+      // markCreditPaid / markClientCreditPaid más abajo).
+      affects_balance: true,
     })
     .select()
     .single()
@@ -137,8 +137,9 @@ export async function deleteProvider(id) {
   mustNotError(error, 'deleteProvider')
 }
 
-// Pago a proveedor = crea una transacción tipo 'egreso' asociada a providerId
-export async function payProvider({ providerId, amount, description, date, affectsBalance = false }) {
+// Pago a proveedor = crea una transacción tipo 'egreso' asociada a providerId.
+// Esto SIEMPRE resta del saldo en caja (ver nota en addTransaction).
+export async function payProvider({ providerId, amount, description, date }) {
   return addTransaction({
     type: 'egreso',
     amount,
@@ -146,7 +147,6 @@ export async function payProvider({ providerId, amount, description, date, affec
     description,
     date,
     providerId,
-    affectsBalance,
   })
 }
 
@@ -178,7 +178,7 @@ export async function addCredit({ providerId, amount, description, date, dueDate
   return mapCredit(data)
 }
 
-export async function markCreditPaid(id, affectsBalance = false) {
+export async function markCreditPaid(id) {
   const { data: credit, error: fetchError } = await supabase
     .from('provider_credits')
     .select('*')
@@ -192,8 +192,8 @@ export async function markCreditPaid(id, affectsBalance = false) {
     .eq('id', id)
   mustNotError(updateError, 'markCreditPaid (update)')
 
-  // El pago del crédito SÍ es un egreso real; si además marcaste el check,
-  // también descuenta del saldo en efectivo.
+  // Pagar un crédito SIEMPRE genera su egreso correspondiente, en la misma
+  // operación. Así el saldo en caja y "Por pagar" nunca quedan desincronizados.
   await addTransaction({
     type: 'egreso',
     amount: credit.amount,
@@ -201,7 +201,6 @@ export async function markCreditPaid(id, affectsBalance = false) {
     description: `Pago de crédito: ${credit.description}`,
     date: new Date().toISOString(),
     providerId: credit.provider_id,
-    affectsBalance,
   })
   return mapCredit(credit)
 }
@@ -294,43 +293,48 @@ export async function deleteClientCredit(id) {
 
 // ---------- Cálculos para el Dashboard ----------
 
-// El "saldo en efectivo" es el total de ingresos, MENOS los gastos que el usuario
-// marcó explícitamente con el check "Descontar del saldo en efectivo". Los demás
-// gastos se registran igual (para el control de gastos) pero no tocan el saldo.
+// Regla única, sin excepciones: el saldo en caja es ingresos menos egresos.
+// Todo lo que está en `transactions` es dinero que realmente entró o salió.
 export async function getSummary() {
   const txs = await getTransactions()
   const ingresos = txs.filter((t) => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0)
   const gastos = txs.filter((t) => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0)
-  const gastosQueDescuentan = txs
-    .filter((t) => t.type === 'egreso' && t.affectsBalance)
-    .reduce((sum, t) => sum + t.amount, 0)
   return {
     ingresos,
     gastos,
-    saldo: ingresos - gastosQueDescuentan,
+    saldo: ingresos - gastos,
   }
 }
 
-// Resumen del día actual: ingresos, gastos y el TOTAL (suma de ambos),
-// útil para cuadre de caja diario. Los gastos que el usuario marcó para
-// descontar del saldo en efectivo (el check) NO se cuentan aquí, porque esos
-// ya salen directamente del fondo de saldo — contarlos de nuevo en el Total
-// del día sería duplicarlos.
+// Resumen del día actual, para cuadre de caja: cuánto entró y cuánto salió hoy.
 export async function getTodaySummary() {
   const txs = await getTransactions()
   const key = todayKey()
   const todayTxs = txs.filter((t) => localDateKey(t.date) === key)
 
   const ingresosHoy = todayTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
-  const gastosHoy = todayTxs
-    .filter((t) => t.type === 'egreso' && !t.affectsBalance)
-    .reduce((s, t) => s + t.amount, 0)
+  const gastosHoy = todayTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
 
   return {
     ingresosHoy,
     gastosHoy,
-    totalHoy: ingresosHoy + gastosHoy,
+    netoHoy: ingresosHoy - gastosHoy,
   }
+}
+
+// Cuentas por cobrar (lo que te deben los clientes) y por pagar (lo que le
+// debes a proveedores). Se muestran SEPARADAS del saldo en caja a propósito:
+// mezclarlas con el saldo fue el origen de la confusión anterior. El saldo es
+// caja real; "por cobrar/pagar" es dinero que todavía no se ha movido.
+export async function getPendingTotals() {
+  const [credits, clientCredits] = await Promise.all([getCredits(), getClientCredits()])
+  const porPagar = credits
+    .filter((c) => c.status === 'pendiente')
+    .reduce((sum, c) => sum + c.amount, 0)
+  const porCobrar = clientCredits
+    .filter((c) => c.status === 'pendiente')
+    .reduce((sum, c) => sum + c.amount, 0)
+  return { porPagar, porCobrar }
 }
 
 // Agrupa movimientos de los últimos N días para la gráfica (vista "Día")

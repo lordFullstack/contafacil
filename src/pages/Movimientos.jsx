@@ -217,8 +217,8 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
           title="Eliminar movimiento"
           message={
             pendingDelete.type === 'ingreso'
-              ? `Vas a eliminar un ingreso de ${formatCOP(pendingDelete.amount)}.\n\nEsto SÍ restará ese monto de tu saldo en efectivo (el saldo es la suma de los ingresos). ¿Confirmas?`
-              : `Vas a eliminar un gasto de ${formatCOP(pendingDelete.amount)}.\n\nEsto solo lo quita del control de gastos, NO afecta tu saldo en efectivo. ¿Confirmas?`
+              ? `Vas a eliminar un ingreso de ${formatCOP(pendingDelete.amount)}.\n\nTu saldo en caja bajará ese monto. ¿Confirmas?`
+              : `Vas a eliminar un gasto de ${formatCOP(pendingDelete.amount)}.\n\nTu saldo en caja subirá ese monto (se descuenta el gasto). ¿Confirmas?`
           }
           confirmLabel="Sí, eliminar"
           cancelLabel="Cancelar"

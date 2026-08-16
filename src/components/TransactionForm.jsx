@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { addTransaction, payProvider } from '../lib/storage'
 import { todayKey } from '../lib/dateUtils'
-import ConfirmDialog from './ConfirmDialog'
-import { formatCOP } from './StatCard'
 
 const CATEGORIES = {
   ingreso: ['Ventas', 'Servicios', 'Otro ingreso'],
@@ -17,15 +15,12 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
   const [description, setDescription] = useState('')
   const [providerId, setProviderId] = useState('')
   const [date, setDate] = useState(() => todayKey()) // YYYY-MM-DD en hora LOCAL, hoy por defecto
-  const [affectsBalance, setAffectsBalance] = useState(false)
-  const [pendingSave, setPendingSave] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   function handleTypeChange(next) {
     setType(next)
     setCategory(CATEGORIES[next][0])
-    setAffectsBalance(false)
     if (next === 'ingreso') setProviderId('')
   }
 
@@ -37,13 +32,16 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
     return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString()
   }
 
-  async function commitSave() {
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!amount || Number(amount) <= 0) return
+
     setSaving(true)
     setError('')
     try {
       const isoDate = dateToISO(date)
       if (category === 'Pago a proveedor' && providerId) {
-        await payProvider({ providerId, amount, description, date: isoDate, affectsBalance })
+        await payProvider({ providerId, amount, description, date: isoDate })
       } else {
         await addTransaction({
           type,
@@ -52,29 +50,14 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
           description,
           providerId: providerId || null,
           date: isoDate,
-          affectsBalance,
         })
       }
-      setPendingSave(false)
       onSaved()
     } catch (err) {
       setError(err.message || 'No se pudo guardar el movimiento.')
-      setPendingSave(false)
     } finally {
       setSaving(false)
     }
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!amount || Number(amount) <= 0) return
-
-    // Cualquier egreso pide permiso explícito antes de descontar saldo real
-    if (type === 'egreso') {
-      setPendingSave(true)
-      return
-    }
-    commitSave()
   }
 
   return (
@@ -181,24 +164,6 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
             />
           </div>
 
-          {type === 'egreso' && (
-            <label className="flex items-start gap-3 rounded-xl border border-base-600 bg-base-800 px-4 py-3">
-              <input
-                type="checkbox"
-                checked={affectsBalance}
-                onChange={(e) => setAffectsBalance(e.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-egreso"
-              />
-              <span className="text-sm text-slate-300">
-                Descontar este gasto del <strong>saldo en efectivo</strong>
-                <span className="block text-xs text-slate-500">
-                  Por defecto los gastos NO descuentan el saldo (solo quedan en el control de gastos). Marca esto
-                  únicamente si el dinero salió de la misma caja.
-                </span>
-              </span>
-            </label>
-          )}
-
           {error && <p className="text-xs text-egreso">{error}</p>}
 
           <button
@@ -210,23 +175,6 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
           </button>
         </form>
       </div>
-
-      {pendingSave && (
-        <ConfirmDialog
-          title="Confirmar gasto"
-          message={
-            affectsBalance
-              ? `Vas a registrar un gasto de ${formatCOP(Number(amount))}.\n\nMarcaste que SÍ descuenta del saldo en efectivo. ¿Confirmas?`
-              : `Vas a registrar un gasto de ${formatCOP(Number(amount))}.\n\nEste monto se guarda por separado, en el control de gastos. NO afecta tu saldo en efectivo. ¿Confirmas?`
-          }
-          confirmLabel={saving ? 'Guardando...' : 'Sí, registrar'}
-          cancelLabel="Cancelar"
-          tone="egreso"
-          onConfirm={commitSave}
-          onCancel={() => setPendingSave(false)}
-        />
-      )}
     </div>
   )
-            }
-
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Upload, Plus, Calculator, Layers, Eye, EyeOff } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Download, FileJson, Upload, Plus, HandCoins, CreditCard, Eye, EyeOff } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import StatCard, { formatCOP } from '../components/StatCard'
 import TransactionForm from '../components/TransactionForm'
@@ -7,6 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import {
   getSummary,
   getTodaySummary,
+  getPendingTotals,
   getDailySeries,
   getMonthlySeries,
   getYearlySeries,
@@ -38,7 +39,8 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
 
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState({ ingresos: 0, gastos: 0, saldo: 0 })
-  const [today, setToday] = useState({ totalHoy: 0 })
+  const [today, setToday] = useState({ ingresosHoy: 0, gastosHoy: 0, netoHoy: 0 })
+  const [pending, setPending] = useState({ porCobrar: 0, porPagar: 0 })
   const [series, setSeries] = useState([])
   const [recent, setRecent] = useState([])
   const [providers, setProviders] = useState([])
@@ -57,11 +59,12 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
     const seriesPromise =
       period === 'mes' ? getMonthlySeries(6) : period === 'anio' ? getYearlySeries(5) : getDailySeries(dayRange)
 
-    Promise.all([getSummary(), getTodaySummary(), seriesPromise, getTransactions(), getProviders()])
-      .then(([s, t, ser, txs, provs]) => {
+    Promise.all([getSummary(), getTodaySummary(), getPendingTotals(), seriesPromise, getTransactions(), getProviders()])
+      .then(([s, t, p, ser, txs, provs]) => {
         if (cancelled) return
         setSummary(s)
         setToday(t)
+        setPending(p)
         setSeries(ser)
         setRecent(txs.slice(0, 5))
         setProviders(provs)
@@ -141,31 +144,43 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
         <p className="px-5 text-sm text-slate-500 md:px-0">Cargando datos...</p>
       )}
 
-      {/* Tarjetas resumen */}
-      <div className="grid grid-cols-2 gap-3 px-5 md:grid-cols-4 md:px-0">
-        <div className="col-span-2 md:col-span-1">
-          <StatCard label="Saldo en efectivo" value={summary.saldo} icon={Wallet} tone="neutral" hidden={valuesHidden} />
+      {/* Saldo en caja: la cifra principal, sin ambigüedad — ingresos menos egresos */}
+      <div className="px-5 md:px-0">
+        <div className="rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Saldo en caja</span>
+            <Wallet size={16} className="text-brand-gold" strokeWidth={2} />
+          </div>
+          <p className="mt-2 font-mono text-2xl font-semibold tabular-nums text-brand-gold">
+            {valuesHidden ? '••••••' : formatCOP(summary.saldo)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Hoy: <span className="text-ingreso">+{valuesHidden ? '•••' : formatCOP(today.ingresosHoy)}</span>
+            {' · '}
+            <span className="text-egreso">-{valuesHidden ? '•••' : formatCOP(today.gastosHoy)}</span>
+          </p>
+          <div className="mt-3 flex items-center justify-between border-t border-base-700 pt-3">
+            <span className="text-xs text-slate-400">
+              Disponible para retirar
+              <span className="block text-[11px] text-slate-600">saldo menos lo que debes (arriendo, servicios, proveedores)</span>
+            </span>
+            <span className="font-mono text-sm font-semibold text-ingreso">
+              {valuesHidden ? '••••••' : formatCOP(summary.saldo - pending.porPagar)}
+            </span>
+          </div>
         </div>
-        <div className="col-span-2 md:col-span-1">
-          <StatCard
-            label="Total del día (ingresos + gastos)"
-            value={today.totalHoy}
-            icon={Calculator}
-            tone="neutral"
-            hidden={valuesHidden}
-          />
-        </div>
+      </div>
+
+      {/* Ingresos y egresos del histórico completo */}
+      <div className="grid grid-cols-2 gap-3 px-5 pt-3 md:px-0">
         <StatCard label="Ingresos" value={summary.ingresos} icon={TrendingUp} tone="ingreso" hidden={valuesHidden} />
         <StatCard label="Gastos" value={summary.gastos} icon={TrendingDown} tone="egreso" hidden={valuesHidden} />
-        <div className="col-span-2 md:col-span-4">
-          <StatCard
-            label="Total global (ingresos + gastos, histórico)"
-            value={summary.ingresos + summary.gastos}
-            icon={Layers}
-            tone="neutral"
-            hidden={valuesHidden}
-          />
-        </div>
+      </div>
+
+      {/* Por cobrar / por pagar: dinero que NO está en caja todavía, aparte a propósito */}
+      <div className="grid grid-cols-2 gap-3 px-5 pt-3 md:px-0">
+        <StatCard label="Por cobrar (fiado)" value={pending.porCobrar} icon={HandCoins} tone="ingreso" hidden={valuesHidden} />
+        <StatCard label="Por pagar (crédito)" value={pending.porPagar} icon={CreditCard} tone="egreso" hidden={valuesHidden} />
       </div>
 
       {/* Gráfica + movimientos recientes: lado a lado en escritorio */}
