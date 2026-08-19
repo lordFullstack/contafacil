@@ -291,18 +291,112 @@ export async function deleteClientCredit(id) {
   mustNotError(error, 'deleteClientCredit')
 }
 
-// ---------- Cálculos para el Dashboard ----------
+// ---------- Cierres diarios ----------
+//
+// El saldo en caja YA NO se recalcula desde cero como "ingresos - gastos"
+// de todo el historial. Se acumula día a día, como haría alguien a mano:
+//   saldo del día = fondo anterior (el cierre del día previo) + "te quedó" del día
+// Cada día que ya terminó (es decir, todos los días antes de hoy) queda
+// "cerrado" en la tabla `daily_closings`, de forma automática, sin que el
+// usuario tenga que confirmar nada. Si un día se quedó sin cerrar (la app no
+// se abrió), el sistema lo cierra retroactivo apenas vuelve a cargar.
+// El día de HOY nunca se cierra: sigue "abierto" y se muestra en vivo sumando
+// sus movimientos sobre el último cierre disponible.
 
-// Regla única, sin excepciones: el saldo en caja es ingresos menos egresos.
-// Todo lo que está en `transactions` es dinero que realmente entró o salió.
+function addDays(dateKey, days) {
+  const [y, m, d] = dateKey.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + days)
+  return localDateKey(dt)
+}
+
+export async function getDailyClosings() {
+  const { data, error } = await supabase.from('daily_closings').select('*').order('date', { ascending: true })
+  mustNotError(error, 'getDailyClosings')
+  return data.map((row) => ({
+    date: row.date,
+    fondoAnterior: Number(row.fondo_anterior),
+    ingresos: Number(row.ingresos),
+    gastos: Number(row.gastos),
+    teQuedo: Number(row.te_quedo),
+    saldoFinal: Number(row.saldo_final),
+  }))
+}
+
+// Cierra automáticamente todos los días que ya terminaron (todo antes de hoy)
+// y que todavía no tienen cierre guardado. Es la pieza que hace que "un día
+// sin cierre" se resuelva solo: la próxima vez que alguien abra la app,
+// este backfill corre y pone al día la cadena de cierres hasta ayer.
+async function ensureClosingsUpToYesterday(txs, closings) {
+  const today = todayKey()
+  let lastClosing = closings[closings.length - 1] || null
+
+  // Desde dónde empezamos a cerrar: el día después del último cierre guardado,
+  // o el día de la transacción más antigua si nunca se ha cerrado nada.
+  let cursor
+  if (lastClosing) {
+    cursor = addDays(lastClosing.date, 1)
+  } else if (txs.length > 0) {
+    const oldest = txs.reduce((min, t) => (localDateKey(t.date) < min ? localDateKey(t.date) : min), todayKey())
+    cursor = oldest
+  } else {
+    return closings // nada que cerrar todavía
+  }
+
+  const newRows = []
+  let fondoAnterior = lastClosing ? lastClosing.saldoFinal : 0
+
+  while (cursor < today) {
+    const dayTxs = txs.filter((t) => localDateKey(t.date) === cursor)
+    const ingresos = dayTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
+    const gastos = dayTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
+    const teQuedo = ingresos - gastos
+    const saldoFinal = fondoAnterior + teQuedo
+
+    newRows.push({
+      date: cursor,
+      fondo_anterior: fondoAnterior,
+      ingresos,
+      gastos,
+      te_quedo: teQuedo,
+      saldo_final: saldoFinal,
+    })
+
+    fondoAnterior = saldoFinal
+    cursor = addDays(cursor, 1)
+  }
+
+  if (newRows.length === 0) return closings
+
+  // upsert por si dos pestañas intentan cerrar el mismo día al mismo tiempo
+  const { error } = await supabase.from('daily_closings').upsert(newRows, { onConflict: 'date' })
+  mustNotError(error, 'ensureClosingsUpToYesterday')
+
+  return getDailyClosings()
+}
+
+// Regla única, sin excepciones: el saldo en caja es el último cierre
+// acumulado (fondo anterior + lo que quedó cada día), más lo que va de hoy
+// (hoy todavía no se cierra, así que se calcula en vivo sobre la marcha).
 export async function getSummary() {
-  const txs = await getTransactions()
+  const [txs, closingsRaw] = await Promise.all([getTransactions(), getDailyClosings()])
+  const closings = await ensureClosingsUpToYesterday(txs, closingsRaw)
+
+  const lastClosing = closings[closings.length - 1] || null
+  const fondoActual = lastClosing ? lastClosing.saldoFinal : 0
+
+  const key = todayKey()
+  const todayTxs = txs.filter((t) => localDateKey(t.date) === key)
+  const ingresosHoy = todayTxs.filter((t) => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0)
+  const gastosHoy = todayTxs.filter((t) => t.type === 'egreso').reduce((s, t) => s + t.amount, 0)
+
   const ingresos = txs.filter((t) => t.type === 'ingreso').reduce((sum, t) => sum + t.amount, 0)
   const gastos = txs.filter((t) => t.type === 'egreso').reduce((sum, t) => sum + t.amount, 0)
+
   return {
     ingresos,
     gastos,
-    saldo: ingresos - gastos,
+    saldo: fondoActual + (ingresosHoy - gastosHoy),
   }
 }
 
