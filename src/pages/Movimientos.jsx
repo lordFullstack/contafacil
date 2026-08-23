@@ -108,7 +108,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
             onClick={() => setFilter(f.id)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               filter === f.id
-                ? 'bg-brand-gold text-base-950'
+                ? 'bg-brand-primary text-base-950'
                 : 'border border-base-600 text-slate-400'
             }`}
           >
@@ -196,7 +196,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
 
       <button
         onClick={() => setShowForm(true)}
-        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gold text-base-950 shadow-lg active:scale-95 md:bottom-8"
+        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-secondary to-brand-primary text-base-950 shadow-lg active:scale-95 md:bottom-8"
       >
         <Plus size={26} strokeWidth={2.5} />
       </button>

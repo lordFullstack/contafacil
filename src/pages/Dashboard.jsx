@@ -149,9 +149,9 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
         <div className="rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Saldo en caja</span>
-            <Wallet size={16} className="text-brand-gold" strokeWidth={2} />
+            <Wallet size={16} className="text-brand-primary" strokeWidth={2} />
           </div>
-          <p className="mt-2 font-mono text-2xl font-semibold tabular-nums text-brand-gold">
+          <p className="mt-2 font-mono text-2xl font-semibold tabular-nums text-brand-primary">
             {valuesHidden ? '••••••' : formatCOP(summary.saldo)}
           </p>
           <p className="mt-1 text-xs text-slate-500">
@@ -190,7 +190,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-base-700 pt-2 text-sm">
             <span className="font-medium text-slate-200">Total del día</span>
-            <span className="font-mono text-base font-bold text-brand-gold">
+            <span className="font-mono text-base font-bold text-brand-primary">
               {valuesHidden ? '••••••' : formatCOP(today.ingresosHoy)}
             </span>
           </div>
@@ -222,7 +222,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
                     key={n}
                     onClick={() => setDayRange(n)}
                     className={`rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
-                      dayRange === n ? 'bg-brand-tealed text-base-950' : 'text-slate-400'
+                      dayRange === n ? 'bg-brand-secondary text-base-950' : 'text-slate-400'
                     }`}
                   >
                     {n}d
@@ -240,7 +240,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
                   key={opt.id}
                   onClick={() => setPeriod(opt.id)}
                   className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
-                    period === opt.id ? 'bg-brand-gold text-base-950' : 'text-slate-400'
+                    period === opt.id ? 'bg-brand-primary text-base-950' : 'text-slate-400'
                   }`}
                 >
                   {opt.label}
@@ -346,7 +346,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       {/* Botón flotante */}
       <button
         onClick={() => setShowForm(true)}
-        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gold text-base-950 shadow-lg active:scale-95 md:bottom-8"
+        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-secondary to-brand-primary text-base-950 shadow-lg active:scale-95 md:bottom-8"
       >
         <Plus size={26} strokeWidth={2.5} />
       </button>

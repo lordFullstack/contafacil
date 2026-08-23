@@ -101,7 +101,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
               value={date}
               max={todayKey()}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold [color-scheme:dark]"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-primary [color-scheme:dark]"
             />
           </div>
 
@@ -115,7 +115,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 font-mono text-lg text-slate-100 outline-none focus:border-brand-gold"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 font-mono text-lg text-slate-100 outline-none focus:border-brand-primary"
             />
           </div>
 
@@ -124,7 +124,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-primary"
             >
               {CATEGORIES[type].map((c) => (
                 <option key={c} value={c}>
@@ -141,7 +141,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
                 value={providerId}
                 onChange={(e) => setProviderId(e.target.value)}
                 required
-                className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold"
+                className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-primary"
               >
                 <option value="">Selecciona un proveedor</option>
                 {providers.map((p) => (
@@ -160,7 +160,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ej: Venta de mostrador"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-gold"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-primary"
             />
           </div>
 
@@ -169,7 +169,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-xl bg-brand-gold py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
+            className="w-full rounded-xl bg-gradient-to-br from-brand-secondary to-brand-primary py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
           >
             {saving ? 'Guardando...' : 'Guardar movimiento'}
           </button>

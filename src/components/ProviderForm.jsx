@@ -44,7 +44,7 @@ export default function ProviderForm({ onClose, onSaved }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Distribuidora La 70"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
             />
           </div>
 
@@ -55,7 +55,7 @@ export default function ProviderForm({ onClose, onSaved }) {
               value={nit}
               onChange={(e) => setNit(e.target.value)}
               placeholder="900123456-1"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
             />
           </div>
 
@@ -66,7 +66,7 @@ export default function ProviderForm({ onClose, onSaved }) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="300 123 4567"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
             />
           </div>
 
@@ -77,7 +77,7 @@ export default function ProviderForm({ onClose, onSaved }) {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="Insumos, oficina, transporte..."
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
             />
           </div>
 
@@ -86,7 +86,7 @@ export default function ProviderForm({ onClose, onSaved }) {
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-xl bg-brand-tealed py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
+            className="w-full rounded-xl bg-gradient-to-br from-brand-secondary to-brand-primary py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
           >
             {saving ? 'Guardando...' : 'Guardar proveedor'}
           </button>

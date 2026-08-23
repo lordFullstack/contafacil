@@ -101,10 +101,10 @@ export default function Clientes({ refreshKey, onDataChanged }) {
               {pending.length > 0 && (
                 <div className="mt-3 rounded-xl bg-base-800 p-3">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-medium uppercase tracking-wide text-brand-tealed">
+                    <span className="text-xs font-medium uppercase tracking-wide text-brand-secondary">
                       Debe (fiado)
                     </span>
-                    <span className="font-mono text-sm font-semibold text-brand-tealed">
+                    <span className="font-mono text-sm font-semibold text-brand-secondary">
                       {formatCOP(totalPending)}
                     </span>
                   </div>
@@ -150,7 +150,7 @@ export default function Clientes({ refreshKey, onDataChanged }) {
 
       <button
         onClick={() => setShowCustomerForm(true)}
-        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-brand-tealed text-base-950 shadow-lg active:scale-95 md:bottom-8"
+        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-secondary to-brand-primary text-base-950 shadow-lg active:scale-95 md:bottom-8"
       >
         <Plus size={26} strokeWidth={2.5} />
       </button>

@@ -22,11 +22,11 @@ export default function BottomNav({ active, onChange }) {
               <Icon
                 size={22}
                 strokeWidth={isActive ? 2.4 : 1.8}
-                className={isActive ? 'text-brand-gold' : 'text-slate-500'}
+                className={isActive ? 'text-brand-primary' : 'text-slate-500'}
               />
               <span
                 className={`text-[11px] font-medium ${
-                  isActive ? 'text-brand-gold' : 'text-slate-500'
+                  isActive ? 'text-brand-primary' : 'text-slate-500'
                 }`}
               >
                 {label}

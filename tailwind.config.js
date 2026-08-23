@@ -11,11 +11,12 @@ export default {
           700: '#1D2733',
           600: '#2A3644',
         },
-        ingreso: '#2FD98A',
+        ingreso: '#32E993',
         egreso: '#FF5D6C',
         brand: {
-          gold: '#E8B34A',
-          tealed: '#1FB6A8',
+          primary: '#0C90FA',
+          secondary: '#1ADEB0',
+          deep: '#034CD2',
         },
       },
       fontFamily: {

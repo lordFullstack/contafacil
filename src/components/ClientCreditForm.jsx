@@ -47,7 +47,7 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
               required
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
             >
               <option value="">Selecciona un cliente</option>
               {customers.map((c) => (
@@ -68,7 +68,7 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 font-mono text-lg text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 font-mono text-lg text-slate-100 outline-none focus:border-brand-secondary"
             />
           </div>
 
@@ -79,7 +79,7 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ej: Mercado de la semana"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
             />
           </div>
 
@@ -89,7 +89,7 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed [color-scheme:dark]"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary [color-scheme:dark]"
             />
           </div>
 
@@ -98,7 +98,7 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-xl bg-brand-tealed py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
+            className="w-full rounded-xl bg-gradient-to-br from-brand-secondary to-brand-primary py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
           >
             {saving ? 'Guardando...' : 'Guardar crédito'}
           </button>

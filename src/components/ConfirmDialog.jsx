@@ -16,7 +16,7 @@ export default function ConfirmDialog({
   children, // contenido opcional extra, ej. un checkbox, entre el mensaje y los botones
 }) {
   const confirmColor =
-    tone === 'egreso' ? 'bg-egreso text-white' : 'bg-brand-gold text-base-950'
+    tone === 'egreso' ? 'bg-egreso text-white' : 'bg-brand-primary text-base-950'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-6">
@@ -24,7 +24,7 @@ export default function ConfirmDialog({
         <div className="mb-3 flex items-center gap-2">
           <span
             className={`flex h-9 w-9 items-center justify-center rounded-full ${
-              tone === 'egreso' ? 'bg-egreso/15 text-egreso' : 'bg-brand-gold/15 text-brand-gold'
+              tone === 'egreso' ? 'bg-egreso/15 text-egreso' : 'bg-brand-primary/15 text-brand-primary'
             }`}
           >
             <AlertTriangle size={18} />

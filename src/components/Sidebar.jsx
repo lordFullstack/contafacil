@@ -11,7 +11,7 @@ export default function Sidebar({ active, onChange, companyName }) {
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-base-700 bg-base-900 md:flex">
       <div className="flex items-center gap-2 px-6 py-6">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gold/15 text-brand-gold">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-primary/15 text-brand-primary">
           <Wallet size={18} />
         </span>
         <div className="min-w-0">
@@ -29,7 +29,7 @@ export default function Sidebar({ active, onChange, companyName }) {
               onClick={() => onChange(id)}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-brand-gold/15 text-brand-gold'
+                  ? 'bg-brand-primary/15 text-brand-primary'
                   : 'text-slate-400 hover:bg-base-800 hover:text-slate-200'
               }`}
             >

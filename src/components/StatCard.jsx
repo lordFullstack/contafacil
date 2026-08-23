@@ -10,7 +10,7 @@ export default function StatCard({ label, value, icon: Icon, tone = 'neutral', h
   const toneClasses = {
     ingreso: 'text-ingreso',
     egreso: 'text-egreso',
-    neutral: 'text-brand-gold',
+    neutral: 'text-brand-primary',
   }[tone]
 
   return (

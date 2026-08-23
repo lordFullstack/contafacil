@@ -43,7 +43,7 @@ export default function CustomerForm({ onClose, onSaved }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Juan Pérez"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
             />
           </div>
 
@@ -54,7 +54,7 @@ export default function CustomerForm({ onClose, onSaved }) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="300 123 4567"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
             />
           </div>
 
@@ -65,7 +65,7 @@ export default function CustomerForm({ onClose, onSaved }) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Ej: cliente frecuente"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-tealed"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
             />
           </div>
 
@@ -74,7 +74,7 @@ export default function CustomerForm({ onClose, onSaved }) {
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-xl bg-brand-tealed py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
+            className="w-full rounded-xl bg-gradient-to-br from-brand-secondary to-brand-primary py-3.5 text-center font-semibold text-base-950 active:scale-[0.98] disabled:opacity-60"
           >
             {saving ? 'Guardando...' : 'Guardar cliente'}
           </button>
