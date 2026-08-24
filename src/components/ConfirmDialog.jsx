@@ -29,17 +29,17 @@ export default function ConfirmDialog({
           >
             <AlertTriangle size={18} />
           </span>
-          <h2 className="font-display text-base font-semibold text-slate-100">{title}</h2>
+          <h2 className="font-display text-base font-semibold text-slate-800">{title}</h2>
         </div>
 
-        <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-slate-400">{message}</p>
+        <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-slate-500">{message}</p>
 
         {children && <div className="mb-5">{children}</div>}
 
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-base-600 py-2.5 text-sm font-medium text-slate-300 active:scale-[0.98]"
+            className="flex-1 rounded-xl border border-base-600 py-2.5 text-sm font-medium text-slate-600 active:scale-[0.98]"
           >
             {cancelLabel}
           </button>

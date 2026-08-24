@@ -34,20 +34,20 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-t-3xl border-t border-base-700 bg-base-900 p-5 pb-8">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-slate-100">Nuevo crédito (fiado)</h2>
-          <button onClick={onClose} className="rounded-full p-1.5 text-slate-400 hover:bg-base-800">
+          <h2 className="font-display text-lg font-semibold text-slate-800">Nuevo crédito (fiado)</h2>
+          <button onClick={onClose} className="rounded-full p-1.5 text-slate-500 hover:bg-base-800">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Cliente</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Cliente</label>
             <select
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
               required
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-800 outline-none focus:border-brand-secondary"
             >
               <option value="">Selecciona un cliente</option>
               {customers.map((c) => (
@@ -59,7 +59,7 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Monto fiado (COP)</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Monto fiado (COP)</label>
             <input
               type="number"
               inputMode="numeric"
@@ -68,28 +68,28 @@ export default function ClientCreditForm({ customers, defaultCustomerId, onClose
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 font-mono text-lg text-slate-100 outline-none focus:border-brand-secondary"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 font-mono text-lg text-slate-800 outline-none focus:border-brand-secondary"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Descripción (opcional)</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Descripción (opcional)</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ej: Mercado de la semana"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-800 outline-none focus:border-brand-secondary"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Fecha límite de pago (opcional)</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Fecha límite de pago (opcional)</label>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-secondary [color-scheme:dark]"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-800 outline-none focus:border-brand-secondary [color-scheme:dark]"
             />
           </div>
 

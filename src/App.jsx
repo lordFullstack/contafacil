@@ -23,7 +23,7 @@ export default function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-base-950 md:flex">
+    <div className="min-h-screen bg-white md:flex">
       <Sidebar active={tab} onChange={setTab} companyName={settings.companyName} />
 
       <div className="mx-auto w-full max-w-md md:max-w-4xl md:px-8 md:py-8">

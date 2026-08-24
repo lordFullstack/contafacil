@@ -16,7 +16,7 @@ export default function StatCard({ label, value, icon: Icon, tone = 'neutral', h
   return (
     <div className="rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</span>
         {Icon && <Icon size={16} className={toneClasses} strokeWidth={2} />}
       </div>
       <p className={`mt-2 font-mono text-xl font-semibold tabular-nums ${toneClasses}`}>

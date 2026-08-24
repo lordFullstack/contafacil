@@ -125,14 +125,14 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       {/* Encabezado */}
       <header className="flex items-start justify-between px-5 pt-6 pb-4 md:px-0">
         <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
+          <p className="text-xs font-medium uppercase tracking-widest text-slate-600">
             {settings.companyName}
           </p>
-          <h1 className="font-display text-2xl font-bold text-slate-50">Dashboard</h1>
+          <h1 className="font-display text-2xl font-bold text-slate-900">Dashboard</h1>
         </div>
         <button
           onClick={toggleValuesHidden}
-          className="mt-1 flex items-center gap-1.5 rounded-full border border-base-600 px-3 py-1.5 text-xs font-medium text-slate-400 active:scale-[0.98]"
+          className="mt-1 flex items-center gap-1.5 rounded-full border border-base-600 px-3 py-1.5 text-xs font-medium text-slate-500 active:scale-[0.98]"
           title={valuesHidden ? 'Mostrar montos' : 'Ocultar montos'}
         >
           {valuesHidden ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -141,28 +141,28 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       </header>
 
       {loading && (
-        <p className="px-5 text-sm text-slate-500 md:px-0">Cargando datos...</p>
+        <p className="px-5 text-sm text-slate-600 md:px-0">Cargando datos...</p>
       )}
 
       {/* Saldo en caja: la cifra principal, sin ambigüedad — ingresos menos egresos */}
       <div className="px-5 md:px-0">
         <div className="rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Saldo en caja</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Saldo en caja</span>
             <Wallet size={16} className="text-brand-primary" strokeWidth={2} />
           </div>
           <p className="mt-2 font-mono text-2xl font-semibold tabular-nums text-brand-primary">
             {valuesHidden ? '••••••' : formatCOP(summary.saldo)}
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-600">
             Hoy: <span className="text-ingreso">+{valuesHidden ? '•••' : formatCOP(today.ingresosHoy)}</span>
             {' · '}
             <span className="text-egreso">-{valuesHidden ? '•••' : formatCOP(today.gastosHoy)}</span>
           </p>
           <div className="mt-3 flex items-center justify-between border-t border-base-700 pt-3">
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-500">
               Disponible para retirar
-              <span className="block text-[11px] text-slate-600">saldo menos lo que debes (arriendo, servicios, proveedores)</span>
+              <span className="block text-[11px] text-slate-400">saldo menos lo que debes (arriendo, servicios, proveedores)</span>
             </span>
             <span className="font-mono text-sm font-semibold text-ingreso">
               {valuesHidden ? '••••••' : formatCOP(summary.saldo - pending.porPagar)}
@@ -175,21 +175,21 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
           lo gastado + lo que quedó = lo que vendiste hoy */}
       <div className="px-5 pt-3 md:px-0">
         <div className="rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Cuadre de hoy</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Cuadre de hoy</p>
           <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="text-slate-400">Gastado hoy</span>
+            <span className="text-slate-500">Gastado hoy</span>
             <span className="font-mono font-semibold text-egreso">
               {valuesHidden ? '••••••' : formatCOP(today.gastosHoy)}
             </span>
           </div>
           <div className="mt-1.5 flex items-center justify-between text-sm">
-            <span className="text-slate-400">Te quedó</span>
+            <span className="text-slate-500">Te quedó</span>
             <span className="font-mono font-semibold text-ingreso">
               {valuesHidden ? '••••••' : formatCOP(today.netoHoy)}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-base-700 pt-2 text-sm">
-            <span className="font-medium text-slate-200">Total del día</span>
+            <span className="font-medium text-slate-700">Total del día</span>
             <span className="font-mono text-base font-bold text-brand-primary">
               {valuesHidden ? '••••••' : formatCOP(today.ingresosHoy)}
             </span>
@@ -213,7 +213,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       <div className="md:grid md:grid-cols-5 md:gap-4 md:px-0">
       <div className="mx-5 mt-4 rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card md:col-span-3 md:mx-0">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{chartTitle}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{chartTitle}</p>
           <div className="flex items-center gap-2">
             {period === 'dia' && (
               <div className="flex gap-1 rounded-lg bg-base-800 p-0.5">
@@ -222,7 +222,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
                     key={n}
                     onClick={() => setDayRange(n)}
                     className={`rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
-                      dayRange === n ? 'bg-brand-secondary text-base-950' : 'text-slate-400'
+                      dayRange === n ? 'bg-brand-secondary text-base-950' : 'text-slate-500'
                     }`}
                   >
                     {n}d
@@ -240,7 +240,7 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
                   key={opt.id}
                   onClick={() => setPeriod(opt.id)}
                   className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
-                    period === opt.id ? 'bg-brand-primary text-base-950' : 'text-slate-400'
+                    period === opt.id ? 'bg-brand-primary text-base-950' : 'text-slate-500'
                   }`}
                 >
                   {opt.label}
@@ -253,15 +253,15 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
           <AreaChart data={series} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="ingresoFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#2FD98A" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#2FD98A" stopOpacity={0} />
+                <stop offset="5%" stopColor="#32E993" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="#32E993" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="egresoFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF5D6C" stopOpacity={0.35} />
+                <stop offset="5%" stopColor="#FF5D6C" stopOpacity={0.3} />
                 <stop offset="95%" stopColor="#FF5D6C" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1D2733" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E4E7EC" vertical={false} />
             <XAxis
               dataKey="label"
               tick={{ fill: '#64748b', fontSize: 11 }}
@@ -270,11 +270,11 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
               interval={period === 'dia' && dayRange > 7 ? Math.ceil(dayRange / 6) - 1 : 0}
             />
             <Tooltip
-              contentStyle={{ background: '#0D1218', border: '1px solid #1D2733', borderRadius: 12 }}
-              labelStyle={{ color: '#94a3b8' }}
+              contentStyle={{ background: '#FFFFFF', border: '1px solid #E4E7EC', borderRadius: 12, boxShadow: '0 8px 24px -12px rgba(0,0,0,0.15)' }}
+              labelStyle={{ color: '#334155' }}
               formatter={(value) => formatCOP(value)}
             />
-            <Area type="monotone" dataKey="ingresos" stroke="#2FD98A" fill="url(#ingresoFill)" strokeWidth={2} />
+            <Area type="monotone" dataKey="ingresos" stroke="#32E993" fill="url(#ingresoFill)" strokeWidth={2} />
             <Area type="monotone" dataKey="gastos" stroke="#FF5D6C" fill="url(#egresoFill)" strokeWidth={2} />
           </AreaChart>
         </ResponsiveContainer>
@@ -282,18 +282,18 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
 
       {/* Movimientos recientes */}
       <div className="mx-5 mt-4 md:col-span-2 md:mx-0">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
           Movimientos recientes
         </p>
         <div className="divide-y divide-base-700 rounded-2xl border border-base-700 bg-base-900 shadow-card">
           {recent.length === 0 && (
-            <p className="p-4 text-sm text-slate-500">Aún no hay movimientos registrados.</p>
+            <p className="p-4 text-sm text-slate-600">Aún no hay movimientos registrados.</p>
           )}
           {recent.map((t) => (
             <div key={t.id} className="flex items-center justify-between px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-slate-200">{t.description || t.category}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-medium text-slate-700">{t.description || t.category}</p>
+                <p className="text-xs text-slate-600">
                   {new Date(t.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })} · {t.category}
                 </p>
               </div>
@@ -315,19 +315,19 @@ export default function Dashboard({ refreshKey, onDataChanged, settings }) {
       <div className="mx-5 mt-4 grid grid-cols-2 gap-3 md:mx-0 md:max-w-sm">
         <button
           onClick={handleExportCSV}
-          className="flex items-center justify-center gap-2 rounded-xl border border-base-600 bg-base-800 py-3 text-sm font-medium text-slate-200 active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 rounded-xl border border-base-600 bg-base-800 py-3 text-sm font-medium text-slate-700 active:scale-[0.98]"
         >
           <Download size={16} /> Exportar CSV
         </button>
         <button
           onClick={handleExportJSON}
-          className="flex items-center justify-center gap-2 rounded-xl border border-base-600 bg-base-800 py-3 text-sm font-medium text-slate-200 active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 rounded-xl border border-base-600 bg-base-800 py-3 text-sm font-medium text-slate-700 active:scale-[0.98]"
         >
           <FileJson size={16} /> Backup JSON
         </button>
         <button
           onClick={handleImportClick}
-          className="col-span-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-base-600 py-3 text-sm font-medium text-slate-400 active:scale-[0.98]"
+          className="col-span-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-base-600 py-3 text-sm font-medium text-slate-500 active:scale-[0.98]"
         >
           <Upload size={16} /> Importar backup (JSON)
         </button>

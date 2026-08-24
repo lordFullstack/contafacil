@@ -64,8 +64,8 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-t-3xl border-t border-base-700 bg-base-900 p-5 pb-8">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-slate-100">Nuevo movimiento</h2>
-          <button onClick={onClose} className="rounded-full p-1.5 text-slate-400 hover:bg-base-800">
+          <h2 className="font-display text-lg font-semibold text-slate-800">Nuevo movimiento</h2>
+          <button onClick={onClose} className="rounded-full p-1.5 text-slate-500 hover:bg-base-800">
             <X size={20} />
           </button>
         </div>
@@ -76,7 +76,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
             type="button"
             onClick={() => handleTypeChange('ingreso')}
             className={`rounded-lg py-2 text-sm font-semibold transition-colors ${
-              type === 'ingreso' ? 'bg-ingreso/15 text-ingreso' : 'text-slate-400'
+              type === 'ingreso' ? 'bg-ingreso/15 text-ingreso' : 'text-slate-500'
             }`}
           >
             Ingreso
@@ -85,7 +85,7 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
             type="button"
             onClick={() => handleTypeChange('egreso')}
             className={`rounded-lg py-2 text-sm font-semibold transition-colors ${
-              type === 'egreso' ? 'bg-egreso/15 text-egreso' : 'text-slate-400'
+              type === 'egreso' ? 'bg-egreso/15 text-egreso' : 'text-slate-500'
             }`}
           >
             Egreso
@@ -94,19 +94,19 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Fecha</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Fecha</label>
             <input
               type="date"
               required
               value={date}
               max={todayKey()}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-primary [color-scheme:dark]"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-800 outline-none focus:border-brand-primary [color-scheme:dark]"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Monto (COP)</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Monto (COP)</label>
             <input
               type="number"
               inputMode="numeric"
@@ -115,16 +115,16 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 font-mono text-lg text-slate-100 outline-none focus:border-brand-primary"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 font-mono text-lg text-slate-800 outline-none focus:border-brand-primary"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Categoría</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Categoría</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-primary"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-800 outline-none focus:border-brand-primary"
             >
               {CATEGORIES[type].map((c) => (
                 <option key={c} value={c}>
@@ -136,12 +136,12 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
 
           {category === 'Pago a proveedor' && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-400">Proveedor</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">Proveedor</label>
               <select
                 value={providerId}
                 onChange={(e) => setProviderId(e.target.value)}
                 required
-                className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-primary"
+                className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-800 outline-none focus:border-brand-primary"
               >
                 <option value="">Selecciona un proveedor</option>
                 {providers.map((p) => (
@@ -154,13 +154,13 @@ export default function TransactionForm({ providers, onClose, onSaved, defaultTy
           )}
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Descripción (opcional)</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Descripción (opcional)</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ej: Venta de mostrador"
-              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-100 outline-none focus:border-brand-primary"
+              className="w-full rounded-xl border border-base-600 bg-base-800 px-4 py-3 text-slate-800 outline-none focus:border-brand-primary"
             />
           </div>
 

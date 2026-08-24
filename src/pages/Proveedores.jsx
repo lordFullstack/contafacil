@@ -61,15 +61,15 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
   return (
     <div className="pb-28 md:pb-10">
       <header className="px-5 pt-6 pb-4 md:px-0">
-        <h1 className="font-display text-2xl font-bold text-slate-50">Proveedores</h1>
-        <p className="text-sm text-slate-500">{providers.length} registrados</p>
+        <h1 className="font-display text-2xl font-bold text-slate-900">Proveedores</h1>
+        <p className="text-sm text-slate-600">{providers.length} registrados</p>
       </header>
 
-      {loading && <p className="px-5 text-sm text-slate-500 md:px-0">Cargando...</p>}
+      {loading && <p className="px-5 text-sm text-slate-600 md:px-0">Cargando...</p>}
 
       <div className="mx-5 grid grid-cols-1 gap-3 md:mx-0 md:grid-cols-2">
         {!loading && providers.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-base-600 p-6 text-center text-sm text-slate-500 md:col-span-2">
+          <div className="rounded-2xl border border-dashed border-base-600 p-6 text-center text-sm text-slate-600 md:col-span-2">
             Aún no tienes proveedores. Agrega el primero con el botón +.
           </div>
         )}
@@ -82,17 +82,17 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
             <div key={p.id} className="rounded-2xl border border-base-700 bg-base-900 p-4 shadow-card">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-display font-semibold text-slate-100">{p.name}</p>
-                  <p className="text-xs text-slate-500">{p.category}{p.nit ? ` · NIT ${p.nit}` : ''}</p>
+                  <p className="font-display font-semibold text-slate-800">{p.name}</p>
+                  <p className="text-xs text-slate-600">{p.category}{p.nit ? ` · NIT ${p.nit}` : ''}</p>
                   {p.phone && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                    <p className="mt-1 flex items-center gap-1 text-xs text-slate-600">
                       <Phone size={12} /> {p.phone}
                     </p>
                   )}
                 </div>
                 <button
                   onClick={() => handleDeleteProvider(p.id)}
-                  className="rounded-full p-1.5 text-slate-600 hover:bg-base-800 hover:text-egreso"
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-base-800 hover:text-egreso"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -112,15 +112,15 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
                     {pending.map((c) => (
                       <div key={c.id} className="flex items-center justify-between text-sm">
                         <div>
-                          <p className="text-slate-300">{c.description || 'Crédito'}</p>
+                          <p className="text-slate-600">{c.description || 'Crédito'}</p>
                           {c.dueDate && (
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                               Vence: {new Date(c.dueDate).toLocaleDateString('es-CO')}
                             </p>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-slate-300">{formatCOP(c.amount)}</span>
+                          <span className="font-mono text-slate-600">{formatCOP(c.amount)}</span>
                           <button
                             onClick={() => setPendingCredit({ id: c.id, amount: c.amount, providerName: p.name })}
                             className="text-ingreso hover:text-ingreso/80"
@@ -137,7 +137,7 @@ export default function Proveedores({ refreshKey, onDataChanged }) {
 
               <button
                 onClick={() => setPayingProvider(p)}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-base-600 py-2.5 text-sm font-medium text-slate-200 active:scale-[0.98]"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-base-600 py-2.5 text-sm font-medium text-slate-700 active:scale-[0.98]"
               >
                 <CreditCard size={16} /> Registrar pago
               </button>

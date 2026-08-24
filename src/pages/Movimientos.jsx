@@ -94,11 +94,11 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
   return (
     <div className="pb-28 md:pb-10">
       <header className="px-5 pt-6 pb-4 md:px-0">
-        <h1 className="font-display text-2xl font-bold text-slate-50">Movimientos</h1>
-        <p className="text-sm text-slate-500">Historial agrupado por día</p>
+        <h1 className="font-display text-2xl font-bold text-slate-900">Movimientos</h1>
+        <p className="text-sm text-slate-600">Historial agrupado por día</p>
       </header>
 
-      {loading && <p className="px-5 text-sm text-slate-500 md:px-0">Cargando...</p>}
+      {loading && <p className="px-5 text-sm text-slate-600 md:px-0">Cargando...</p>}
 
       {/* Filtros */}
       <div className="flex gap-2 px-5 md:px-0">
@@ -109,7 +109,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               filter === f.id
                 ? 'bg-brand-primary text-base-950'
-                : 'border border-base-600 text-slate-400'
+                : 'border border-base-600 text-slate-500'
             }`}
           >
             {f.label}
@@ -120,7 +120,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
       {/* Grupos por día */}
       <div className="mx-5 mt-4 space-y-3 md:mx-0">
         {!loading && groups.length === 0 && (
-          <div className="rounded-2xl border border-base-700 bg-base-900 p-4 text-sm text-slate-500 shadow-card">
+          <div className="rounded-2xl border border-base-700 bg-base-900 p-4 text-sm text-slate-600 shadow-card">
             No hay movimientos para este filtro.
           </div>
         )}
@@ -136,8 +136,8 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
                 className="flex w-full items-center justify-between px-4 py-3"
               >
                 <div className="text-left">
-                  <p className="text-sm font-semibold capitalize text-slate-200">{dayLabel(group.key)}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-sm font-semibold capitalize text-slate-700">{dayLabel(group.key)}</p>
+                  <p className="text-xs text-slate-600">
                     {group.items.length} {group.items.length === 1 ? 'movimiento' : 'movimientos'}
                   </p>
                 </div>
@@ -148,7 +148,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
                   </span>
                   <ChevronDown
                     size={18}
-                    className={`text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    className={`text-slate-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}
                   />
                 </div>
               </button>
@@ -163,10 +163,10 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
                         <ArrowDownCircle size={20} className="shrink-0 text-egreso" />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-slate-200">
+                        <p className="truncate text-sm font-medium text-slate-700">
                           {t.description || t.category}
                         </p>
-                        <p className="truncate text-xs text-slate-500">
+                        <p className="truncate text-xs text-slate-600">
                           {t.category}
                           {t.providerId && providerMap[t.providerId] ? ` · ${providerMap[t.providerId]}` : ''}
                         </p>
@@ -181,7 +181,7 @@ export default function Movimientos({ refreshKey, onDataChanged }) {
                       </span>
                       <button
                         onClick={() => setPendingDelete(t)}
-                        className="shrink-0 rounded-full p-1.5 text-slate-600 hover:bg-base-800 hover:text-egreso"
+                        className="shrink-0 rounded-full p-1.5 text-slate-400 hover:bg-base-800 hover:text-egreso"
                       >
                         <Trash2 size={16} />
                       </button>

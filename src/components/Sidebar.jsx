@@ -15,8 +15,8 @@ export default function Sidebar({ active, onChange, companyName }) {
           <Wallet size={18} />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-100">{companyName}</p>
-          <p className="text-xs text-slate-500">ContaFácil</p>
+          <p className="truncate text-sm font-semibold text-slate-800">{companyName}</p>
+          <p className="text-xs text-slate-600">ContaFácil</p>
         </div>
       </div>
 
@@ -30,7 +30,7 @@ export default function Sidebar({ active, onChange, companyName }) {
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-brand-primary/15 text-brand-primary'
-                  : 'text-slate-400 hover:bg-base-800 hover:text-slate-200'
+                  : 'text-slate-500 hover:bg-base-800 hover:text-slate-700'
               }`}
             >
               <Icon size={18} strokeWidth={isActive ? 2.4 : 1.8} />
